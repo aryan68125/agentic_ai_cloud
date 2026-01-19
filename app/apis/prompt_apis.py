@@ -29,5 +29,5 @@ def prompt_page(
     request: PromptRequest,
     controller: PromptController = Depends(get_prompt_controller)
 ):
-    info_logger.info(f"api_hit : /api/prompt_api : {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-    return controller.ingest(request)
+    info_logger.info(f"prompt_page | url = /api/prompt_api | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_prompt(request)

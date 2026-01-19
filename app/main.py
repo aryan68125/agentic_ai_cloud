@@ -2,7 +2,7 @@ from fastapi import FastAPI,status, Request, HTTPException
 from fastapi.responses import JSONResponse
 
 # custom routes
-from app.apis.ingest_data import router as ingest_data_router
+from app.apis.prompt_apis import router as prompt_api_routers
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -19,7 +19,7 @@ app = FastAPI(title = "Relevance Agentic AI")
 
 # include custome routes here
 # ingest_data router
-app.include_router(ingest_data_router, prefix="/api")
+app.include_router(prompt_api_routers, prefix="/api")
 
 # Global error exception response handler
 @app.exception_handler(HTTPException)
@@ -35,7 +35,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 # Test api
 @app.get("/health",status_code = status.HTTP_200_OK)
 def health():
-    info_logger.info(f"api_hit : /api/health : {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    info_logger.info(f"health | url = /api/health | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return {
         "status": status.HTTP_200_OK,
         "message":"success check ok!"
