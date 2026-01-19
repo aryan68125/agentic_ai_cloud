@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, BackgroundTasks
 import uuid
 
-from app.models.prompt_api_models.response_models import PromptResponse
+from app.models.prompt_api_models.response_models import APIResponse
 
 # import common success and error messages
 from app.utils.error_messages import PromptApiErrorMessages
@@ -25,16 +25,16 @@ class PromptController:
     def __init__(self):
         self.process_prompt_service_obj = ProcessPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value)
 
-    async def process_prompt(self, request) -> PromptResponse:
+    async def process_prompt(self, request) -> APIResponse:
         try:
             info_logger.info(f"PromptController.process_prompt | Started to process prompt | prompt_message = {request.prompt_message}")
             result = await self.process_prompt_service_obj.process_prompt(request=request) 
             if not result.status:
-                return PromptResponse(
+                return APIResponse(
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     message=result.message
                 )
-            return PromptResponse(
+            return APIResponse(
                 status = status.HTTP_200_OK,
                 message = result.message,
                 data=result.data

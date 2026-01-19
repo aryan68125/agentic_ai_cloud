@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 
 # custom routes
 from app.apis.prompt_apis import router as prompt_api_routers
+from app.apis.hugging_face_api import router as hugging_face_api_routers
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -22,7 +23,8 @@ app = FastAPI(title = "Relevance Agentic AI")
 
 # include custome routes here
 # ingest_data router
-app.include_router(prompt_api_routers, prefix="/api")
+app.include_router(prompt_api_routers, prefix="/process")
+app.include_router(hugging_face_api_routers, prefix="/hugging_face")
 
 # Global error exception response handler
 @app.exception_handler(HTTPException)
