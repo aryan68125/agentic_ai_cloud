@@ -23,13 +23,12 @@ debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptController:
     def __init__(self):
-        self.process_prompt_service_obj = ProcessPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value)
+        self.process_prompt_service_obj = ProcessPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value)
 
-    def process_prompt(self, request) -> PromptResponse:
+    async def process_prompt(self, request) -> PromptResponse:
         try:
-            prompt_message = request.prompt_message
-            info_logger.info(f"PromptController.process_prompt | Started to process prompt | prompt_message = {prompt_message}")
-            result = self.process_prompt_service_obj.process_prompt(request=request) 
+            info_logger.info(f"PromptController.process_prompt | Started to process prompt | prompt_message = {request.prompt_message}")
+            result = await self.process_prompt_service_obj.process_prompt(request=request) 
             if not result.status:
                 return PromptResponse(
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR,

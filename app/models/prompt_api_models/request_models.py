@@ -16,6 +16,7 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptRequest(BaseModel):
+    ai_model : str = Field(default="meta-llama/Llama-3.1-8B-Instruct",description=RequestFieldDescriptions.AI_MODEL.value)
     prompt_message : str = Field(default=None, description=RequestFieldDescriptions.PROMPT_MESSAGE.value)
 
     @model_validator(mode="after")

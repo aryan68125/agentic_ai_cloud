@@ -28,11 +28,11 @@ def get_prompt_controller():
     return PromptController()
 
 @router.post("/prompt_api", response_model=PromptResponse)
-def prompt_page(
+async def prompt_page(
     request: PromptRequest,
     http_request: Request,
     controller: PromptController = Depends(get_prompt_controller)
 ):
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"prompt_page | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-    return controller.process_prompt(request)
+    return await controller.process_prompt(request)

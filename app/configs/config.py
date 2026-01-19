@@ -30,3 +30,8 @@ class ProjectConfigurations(Enum):
         default=None,
         cast=str
     )
+    HF_API_URL : str = config(
+        "HF_API_URL",
+        default=None,
+        cast=str
+    )
