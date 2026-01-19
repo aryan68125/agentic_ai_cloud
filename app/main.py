@@ -8,7 +8,10 @@ from app.apis.prompt_apis import router as prompt_api_routers
 from app.utils.logger import LoggerFactory
 
 # import logger info messages
-from app.utils.logger_info_messages import LoggerInfoMessages
+from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
+
+# get base url for the fast-api server
+from app.utils.get_base_url import FastApiServer
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -34,8 +37,9 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 # Test api
 @app.get("/health",status_code = status.HTTP_200_OK)
-def health():
-    info_logger.info(f"health | url = /api/health | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+def health(request: Request):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request)
+    info_logger.info(f"health | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.FAST_API_HEALTH_CHECK_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return {
         "status": status.HTTP_200_OK,
         "message":"success check ok!"

@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-from app.core.config import MicroServiceConfigurations
+from app.configs.config import MicroServiceConfigurations
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BASE_LOG_DIR = PROJECT_ROOT / "app" / "logs"
