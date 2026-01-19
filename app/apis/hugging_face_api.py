@@ -6,33 +6,32 @@ from app.models.prompt_api_models.request_models import PromptRequest
 from app.models.prompt_api_models.response_models import APIResponse
 
 # import controllers
-from app.controllers.prompt_controllers import PromptController
+from app.controllers.hugging_face_ai_model_controllers import HuggingFaceAIModelController
 
 # import logging utility
 from app.utils.logger import LoggerFactory
 
 # import info logger messages
-from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
+from app.utils.logger_info_messages import LoggerInfoMessages, HuggingFaceAPIUrls
 
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
 
-router = APIRouter(tags=["Prompt_processing_apis"])
+router = APIRouter(tags=["hugging_face_model_apis"])
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
-def get_prompt_controller():
-    return PromptController()
+def get_hugging_face_ai_model_controller():
+    return HuggingFaceAIModelController()
 
-@router.post("/prompt", response_model=APIResponse)
-async def prompt_page(
-    request: PromptRequest,
+@router.get("/get_ai_models", response_model=APIResponse)
+def get_ai_models(
     http_request: Request,
-    controller: PromptController = Depends(get_prompt_controller)
+    controller: HuggingFaceAIModelController = Depends(get_hugging_face_ai_model_controller)
 ):
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"prompt_page | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-    return await controller.process_prompt(request)
+    info_logger.info(f"get_ai_models | url = {BASE_URL_FAST_API_SERVER}{HuggingFaceAPIUrls.HUGGING_FACE_GET_AI_MODELS.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.get_models()
