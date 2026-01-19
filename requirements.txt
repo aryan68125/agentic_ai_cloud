@@ -17,6 +17,7 @@ idna==3.11
 packaging==25.0
 pydantic==2.12.5
 pydantic_core==2.41.5
+python-decouple==3.8
 python-dotenv==1.2.1
 PyYAML==6.0.3
 shellingham==1.5.4

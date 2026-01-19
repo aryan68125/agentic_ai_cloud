@@ -1,6 +1,6 @@
 from pathlib import Path
 import os
-from app.configs.config import MicroServiceConfigurations
+from app.configs.config import ProjectConfigurations
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BASE_LOG_DIR = PROJECT_ROOT / "app" / "logs"
@@ -9,7 +9,7 @@ class LogInitializer:
     """
     Responsible for creating log directories and files if they don't exist.
     """
-    LOG_STRUCTURE = MicroServiceConfigurations.LOG_STRUCTURE.value
+    LOG_STRUCTURE = ProjectConfigurations.LOG_STRUCTURE.value
     
     @classmethod
     def initialize(cls) -> None:

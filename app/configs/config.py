@@ -1,6 +1,7 @@
 from enum import Enum 
+from decouple import config 
 
-class MicroServiceConfigurations(Enum):
+class ProjectConfigurations(Enum):
     # ---------------------------------------------------------------------------------------------------------------------------------
     # LOGS RELATED CONFIGURATIONS
     # ---------------------------------------------------------------------------------------------------------------------------------
@@ -20,3 +21,12 @@ class MicroServiceConfigurations(Enum):
     # ---------------------------------------------------------------------------------------------------------------------------------
     DB_FOLDER_NAME = "ingestion_state_data"
     DB_NAME = "ingestion_state.db"
+
+    # ---------------------------------------------------------------------------------------------------------------------------------
+    # HUGGINGFACE RELATED CONFIGURATIONS
+    # ---------------------------------------------------------------------------------------------------------------------------------
+    HUGGING_FACE_AUTH_TOKEN : str = config(
+        "HUGGING_FACE_AUTH_TOKEN",
+        default=None,
+        cast=str
+    )

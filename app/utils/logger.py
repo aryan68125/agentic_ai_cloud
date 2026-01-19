@@ -7,7 +7,7 @@ from app.utils.logs_re_namer import numbered_log_namer
 
 from app.utils.log_initializer import BASE_LOG_DIR
 
-from app.configs.config import MicroServiceConfigurations
+from app.configs.config import ProjectConfigurations
 
 class LoggerFactory:
     """
@@ -38,12 +38,12 @@ class LoggerFactory:
         handler.namer = numbered_log_namer
 
         formatter = logging.Formatter(
-            MicroServiceConfigurations.LOG_FILES_CONTENT_FORMATTER.value
+            ProjectConfigurations.LOG_FILES_CONTENT_FORMATTER.value
         )
 
         handler.setFormatter(formatter)
         logger.addHandler(handler)
-        logger.propagate = MicroServiceConfigurations.PROPOGATE_LOGS.value
+        logger.propagate = ProjectConfigurations.PROPOGATE_LOGS.value
 
         return logger
 
@@ -52,7 +52,7 @@ class LoggerFactory:
         LogInitializer.initialize()
         return cls._create_logger(
             name="error_logger",
-            log_file=Path(f"{BASE_LOG_DIR}{MicroServiceConfigurations.ERROR_LOG_DIR.value}"),
+            log_file=Path(f"{BASE_LOG_DIR}{ProjectConfigurations.ERROR_LOG_DIR.value}"),
             level=logging.ERROR
         )
 
@@ -61,7 +61,7 @@ class LoggerFactory:
         LogInitializer.initialize()
         return cls._create_logger(
             name="info_logger",
-            log_file=Path(f"{BASE_LOG_DIR}{MicroServiceConfigurations.INFO_LOG_DIR.value}"),
+            log_file=Path(f"{BASE_LOG_DIR}{ProjectConfigurations.INFO_LOG_DIR.value}"),
             level=logging.INFO
         )
 
@@ -70,6 +70,6 @@ class LoggerFactory:
         LogInitializer.initialize()
         return cls._create_logger(
             name="debug_logger",
-            log_file=Path(f"{BASE_LOG_DIR}{MicroServiceConfigurations.DEBUG_LOG_DIR.value}"),
+            log_file=Path(f"{BASE_LOG_DIR}{ProjectConfigurations.DEBUG_LOG_DIR.value}"),
             level=logging.DEBUG
         )
