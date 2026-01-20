@@ -27,7 +27,7 @@ class PromptController:
 
     async def process_prompt(self, request) -> APIResponse:
         try:
-            info_logger.info(f"PromptController.process_prompt | Started to process prompt | prompt_message = {request.prompt_message}")
+            info_logger.info(f"PromptController.process_prompt | Started to process prompt | user_prompt = {request.user_prompt}")
             result = await self.process_prompt_service_obj.process_prompt(request=request) 
             if not result.status:
                 return APIResponse(

@@ -43,15 +43,15 @@ class ProcessPromptService:
             #         """
             #             Here the end user will write the prompt for it to gain answers from the LLM
             #         """
-            #         {"role": "user", "content": request.prompt_message}
+            #         {"role": "user", "content": request.user_prompt}
             #     ]
             # }
 
             body = {
                 "model": request.ai_model,
                 "messages": [
-                    # {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": request.prompt_message}
+                    {"role": "system", "content": request.system_prompt},
+                    {"role": "user", "content": request.user_prompt}
                 ]
             }
 

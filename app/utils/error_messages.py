@@ -5,5 +5,6 @@ class PromptApiErrorMessages(Enum):
     INTERNAL_SERVER_ERROR = "Internal server error"
 
     # Field related errors
-    PROMPT_EMPTY = "Prompt cannot be empty!"
+    USER_PROMPT_EMPTY = "User prompt cannot be empty!"
+    SYSTEM_PROMPT_EMPTY = "System prompt cannot be empty!"
     
