@@ -24,3 +24,32 @@ Loss of Control
     - control of what is going on and how it should be done
 
 LangChain violates all of these by default.
+
+Tool Execution is Opaque
+- LangChain:
+    - executes tools internally
+    - retries tools without telling you
+    - no guaranteed idempotency
+- My requirements 
+    - LLM should only decide, backend should execute
+
+Hugging Face Support Is Second-Class
+- LangChain works best with:
+    - OpenAI / Anthropic
+- For Hugging Face:
+    - wrappers are brittle
+    - streaming is inconsistent
+    - function-calling is emulated anyway
+
+I will still need custom glue code.
+
+Performance & Scaling
+- LangChain:
+    - adds latency
+    - adds memory overhead
+    - difficult to batch
+    - difficult to stream cleanly
+- Your custom loop:
+    - zero abstraction tax
+    - clean async
+    - HF-friendly
