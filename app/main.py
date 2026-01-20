@@ -14,6 +14,12 @@ from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
 
+# database related imports
+from app.utils.db_conn_manager import PostgresConnectionManager
+
+# import database bootstrap
+from app.utils.db_bootstrap import DatabaseBootstrap
+
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
@@ -36,6 +42,20 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "error": exc.detail
         }
     )
+
+# this closes the connection pool after the db operation is completed
+@app.on_event("startup")
+def startup():
+    # ensure 
+    db_bootstrap = DatabaseBootstrap()
+    db_bootstrap.ensure_database_exists()
+
+    PostgresConnectionManager.get_pool()
+
+@app.on_event("shutdown")
+def shutdown():
+    pool = PostgresConnectionManager.get_pool()
+    pool.close()
 
 # Test api
 @app.get("/health",status_code = status.HTTP_200_OK)
