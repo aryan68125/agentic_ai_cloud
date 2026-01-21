@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, model_validator
 from fastapi import HTTPException, status
 from typing import List, Dict, Any, Optional
-from app.utils.error_messages import PromptApiErrorMessages
-from app.utils.field_descriptions import RequestFieldDescriptions
+from app.utils.error_messages import (PromptApiErrorMessages, AgentApiErrorMessages)
+from app.utils.field_descriptions import (PromptRequestFieldDescriptions, AgentRequestFieldDescription)
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -16,7 +16,7 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptRequest(BaseModel):
-    ai_model : str = Field(default="meta-llama/Llama-3.1-8B-Instruct",description=RequestFieldDescriptions.AI_MODEL.value)
+    ai_model : str = Field(default="meta-llama/Llama-3.1-8B-Instruct",description=PromptRequestFieldDescriptions.AI_MODEL.value)
     system_prompt : str = Field(default="""
         You are an intelligent, autonomous Email Outreach & Research Agent.
     
@@ -126,8 +126,8 @@ class PromptRequest(BaseModel):
         --------------------------------------------------
         You are proactive but never intrusive.
         Your role is to guide, enrich, draft, confirm, and execute — in that order.
-    """, description = RequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
-    user_prompt : str = Field(default=None, description = RequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
+    """, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
+    user_prompt : str = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
 
     @model_validator(mode="after")
     def validate_fields(self):
@@ -144,3 +144,8 @@ class PromptRequest(BaseModel):
                 detail=PromptApiErrorMessages.USER_PROMPT_EMPTY.value
             )
         return self
+    
+
+class AgentRequest(BaseModel):
+    agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
+    agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)

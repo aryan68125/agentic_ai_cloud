@@ -14,3 +14,6 @@ class PromptApiUrls(Enum):
 class HuggingFaceAPIUrls(Enum):
     HUGGING_FACE_GET_AI_MODELS = "/hugging_face/get_ai_models"
 
+class AgentApiUrls(Enum):
+    CREATE_AGENT_API_URL = "/process/agent/create"
+

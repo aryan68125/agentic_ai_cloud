@@ -12,6 +12,6 @@ class PostgresConnectionManager:
                 conninfo=ProjectConfigurations.DB_CONNECTION_STRING.value,
                 min_size=1,
                 max_size=10,
-                open=True
+                open=True,
             )
         return cls._pool
