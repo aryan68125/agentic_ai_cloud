@@ -14,7 +14,8 @@ class AIAgentRepository:
                 id BIGSERIAL PRIMARY KEY,
                 ai_agent_name TEXT NOT NULL UNIQUE,
                 ai_agent_id TEXT NOT NULL UNIQUE,
-                created_at TIMESTAMPTZ DEFAULT now()
+                created_at TIMESTAMPTZ DEFAULT now(),
+                updated_at TIMESTAMPTZ DEFAULT now()
             )
             """)
 
@@ -30,9 +31,14 @@ class AIAgentRepository:
         with self.pool.connection() as conn:
             conn.row_factory = dict_row
             row = conn.execute("""
-                INSERT INTO ai_agent_table (ai_agent_name, ai_agent_id)
-                VALUES (%s, %s)
-                RETURNING id, ai_agent_name, ai_agent_id
+                INSERT INTO ai_agent_table (
+                    ai_agent_name,
+                    ai_agent_id,
+                    created_at,
+                    updated_at
+                )
+                VALUES (%s, %s, now(), now())
+                RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
             """, (agent_name, agent_id)).fetchone()
 
         return row
@@ -42,9 +48,11 @@ class AIAgentRepository:
             conn.row_factory = dict_row
             row = conn.execute("""
                 UPDATE ai_agent_table
-                SET ai_agent_name = %s
+                SET
+                    ai_agent_name = %s,
+                    updated_at = now()
                 WHERE ai_agent_id = %s
-                RETURNING id, ai_agent_name, ai_agent_id
+                RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
             """, (new_name, agent_id)).fetchone()
 
         return row if row else None
