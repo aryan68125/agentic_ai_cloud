@@ -4,7 +4,7 @@ import uuid
 from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
 
 # import common success and error messages
-from app.utils.error_messages import PromptApiErrorMessages
+from app.utils.error_messages import (PromptApiErrorMessages,AgentApiErrorMessages)
 from app.utils.success_messages import PromptApiSuccessMessages
 
 # load project configurations
@@ -68,6 +68,26 @@ class PromptController:
                 result = self.system_prompt_repo.insert(agent_id = request.agent_id, system_prompt = request.system_prompt)
                 if not result.status:
                     error_logger.error(f"PromptController.process_system_prompt | error = {result.message}")
+                debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
+
+            elif operation_type == DbRecordLevelOperationType.UPDATE.value:
+                info_logger.info(f"PromptController.process_system_prompt | update agent name in the database")
+                if not request.agent_id:
+                    error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                    )
+                result = self.system_prompt_repo.update(
+                    agent_id=request.agent_id, 
+                    system_prompt=request.system_prompt
+                )
+                if not result.status:
+                    error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code, 
+                        detail=result.message
+                    )
                 debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
 
             return APIResponseMultipleData(

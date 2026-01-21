@@ -7,7 +7,7 @@ from app.repositories.ai_agent_repository import AIAgentRepository
 
 # import messages
 from app.utils.success_messages import PromptApiSuccessMessages
-from app.utils.error_messages import (PromptApiErrorMessages,AgentApiErrorMessages)
+from app.utils.error_messages import (PromptApiErrorMessages,AgentApiErrorMessages,SystemPromptApiErrorMessages)
 
 # import class response model
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
@@ -107,3 +107,40 @@ class SystemPromptRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e)
             )
+    
+    def update(self, agent_id: str, system_prompt: str) -> RepositoryClassResponse:
+        try:
+            with self.pool.connection() as conn:
+                conn.row_factory = dict_row
+                row = conn.execute("""
+                    UPDATE system_prompt_table
+                    SET
+                        llm_system_prompt = %s,
+                        updated_at = now()
+                    WHERE ai_agent_id = %s
+                    RETURNING id, llm_system_prompt, ai_agent_id, created_at, updated_at
+                """, (system_prompt, agent_id)).fetchone()
+
+            if not row:
+                debug_logger.debug(
+                    f"SystemPromptRepository.update | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)}"
+                )
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
+                )
+            debug_logger.debug(f"SystemPromptRepository.update | update system_prompt | db_response = {row}")
+            return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_200_OK,
+                    message = PromptApiSuccessMessages.SYSTEM_PROMPT_UPDATED.value,
+                    data = row
+                )
+        except Exception as e:
+            error_logger.error(f"SystemPromptRepository.update | {str(e)}")
+            return RepositoryClassResponse(
+                status = False,
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message = str(e)
+            )  
