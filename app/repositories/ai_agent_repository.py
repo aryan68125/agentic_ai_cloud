@@ -96,11 +96,20 @@ class AIAgentRepository:
         debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row if row else None}")
         return row if row else None
 
-    def get_all(self) -> list[dict]:
+    def get_all(self, page : int = 1, page_size : int = 10) -> list[dict]:
+        offset = (page - 1) * page_size
         with self.pool.connection() as conn:
             conn.row_factory = dict_row
             rows = conn.execute(
-                "SELECT * FROM ai_agent_table ORDER BY created_at DESC"
+                """
+                    SELECT *
+                    FROM ai_agent_table
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (page_size, offset)
             ).fetchall()
-        debug_logger.debug(f"AIAgentRepository.get_all | get all db records | db_response = {[r for r in rows]}")
+        debug_logger.debug(
+            f"AIAgentRepository.get_all_paginated | "
+            f"page={page}, page_size={page_size}, returned_rows={len(rows)}"
+        )
         return [r for r in rows]

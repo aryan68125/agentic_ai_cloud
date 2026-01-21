@@ -3,7 +3,7 @@ from app.utils.logger import LoggerFactory
 from app.utils.success_messages import PromptApiSuccessMessages
 
 # import models
-from app.models.prompt_api_models.services_class_response_models import ProcessPromptResponseServiceClassResponse
+from app.models.class_return_model.services_class_response_models import ProcessPromptResponseServiceClassResponse
 
 # import messages
 from app.utils.success_messages import PromptApiSuccessMessages

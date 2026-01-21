@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, BackgroundTasks
 import uuid
 
-from app.models.prompt_api_models.response_models import (APIResponse,APIResponseMultipleData)
+from app.models.api_request_response_model.response_models import (APIResponse,APIResponseMultipleData)
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -71,7 +71,15 @@ class AgentController:
            
             elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
                 info_logger.info(f"AgentController.process_agent | get all agent's name from the database")
-                result = self.ai_agent_repo.get_all()
+                if not request.page:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail=AgentApiErrorMessages.PAGE_NUMBER_EMPTY.value) 
+                if not request.page_size:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail=AgentApiErrorMessages.PAGE_SIZE_EMPTY.value) 
+                result = self.ai_agent_repo.get_all(page = request.page,page_size = request.page_size)
                 debug_logger.debug(f"AgentController.process_agent | result = {result}")
 
             elif operation_type == DbRecordLevelOperationType.GET_ONE.value:

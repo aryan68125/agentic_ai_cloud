@@ -2,8 +2,8 @@
 from fastapi import APIRouter, Depends, BackgroundTasks, Request
 
 # import request response model
-from app.models.prompt_api_models.request_models import PromptRequest
-from app.models.prompt_api_models.response_models import APIResponse
+from app.models.api_request_response_model.request_models import PromptRequest
+from app.models.api_request_response_model.response_models import APIResponse
 
 # import controllers
 from app.controllers.hugging_face_ai_model_controllers import HuggingFaceAIModelController
