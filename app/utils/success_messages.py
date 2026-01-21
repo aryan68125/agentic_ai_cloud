@@ -9,7 +9,10 @@ class PromptApiSuccessMessages(Enum):
     AI_RESPONSE_NORMALIZATION = "Response normalization successfull!"
 
     # system prompt API related success messages
-    SYSTEM_PROMPT_SAVED = "System prompt saved successfully!"
+    SYSTEM_PROMPT_INSERTED = "System prompt inserted successfully!"
+    SYSTEM_PROMPT_UPDATED = "System prompt updated successfully!"
+    SYSTEM_PROMPT_DELETED = "System prompt delete success!"
+    SYSTEM_PROMPT_FETCHED = "System prompt fetched successfully!"
 
 class HuggingFaceAIModelAPISuccessMessage(Enum):
     FETCH_LIST_OF_AI_MODELS = "List of ai models fetched successfully!"
@@ -19,4 +22,3 @@ class AiAgentApiSuccessMessage(Enum):
     AGENT_NAME_UPDATED = "AI Agent name updated successfully!"
     AGENT_NAME_DELETED = "AI Agent name delete success!"
     AGENT_NAME_FETCHED = "AI Agent name fetched successfully!"
-    

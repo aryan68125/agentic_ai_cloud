@@ -3,7 +3,7 @@ from app.utils.logger import LoggerFactory
 from app.utils.success_messages import PromptApiSuccessMessages
 
 # import models
-from app.models.class_return_model.services_class_response_models import ProcessPromptResponseServiceClassResponse
+from app.models.class_return_model.services_class_response_models import ServiceClassResponse
 
 # import messages
 from app.utils.success_messages import PromptApiSuccessMessages
@@ -15,12 +15,12 @@ debug_logger = LoggerFactory.get_debug_logger()
 
 class ProcessPromptResponseService:
     @staticmethod
-    def extract_content(hf_response: dict) -> ProcessPromptResponseServiceClassResponse:
+    def extract_content(hf_response: dict) -> ServiceClassResponse:
         info_logger.info(f"ProcessPromptResponseService.extract_content | Extract assistant message content from Hugging Face chat completion response.")
         try:
             prompt_output = hf_response["choices"][0]["message"]["content"]
             debug_logger.debug(f"ProcessPromptResponseService.extract_content | prompt_output = {prompt_output}")
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = True,
                 message = PromptApiSuccessMessages.AI_RESPONSE_PROCESSING_EXTRACT_CONTENT.value,
                 data = {
@@ -29,17 +29,17 @@ class ProcessPromptResponseService:
             )
         except Exception as e:
             error_logger.error(f"ProcessPromptResponseService.extract_content | error = {str(e)}")
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = False,
                 message = str(e)
             )
 
     @staticmethod
-    def extract_usage(hf_response: dict) -> ProcessPromptResponseServiceClassResponse:
+    def extract_usage(hf_response: dict) -> ServiceClassResponse:
         try:
             info_logger.info(f"ProcessPromptResponseService.extract_usage | Extract token usage information (optional).")
             usage = hf_response.get("usage", {})
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = True,
                 message = PromptApiSuccessMessages.AI_RESPONSE_PROCESSING_EXTRACT_API_USAGE.value,
                 data = {
@@ -48,19 +48,19 @@ class ProcessPromptResponseService:
             )
         except Exception as e:
             error_logger.error(f"ProcessPromptResponseService.extract_usage | error = {str(e)}")
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = False,
                 message = str(e)
             )
 
     @staticmethod
-    def normalize(hf_response: dict) -> ProcessPromptResponseServiceClassResponse:
+    def normalize(hf_response: dict) -> ServiceClassResponse:
         try:
             info_logger.info(f"ProcessPromptResponseService.normalize | Return a normalized response suitable for frontend | content = {content}, usage = {usage}")
             content = ProcessPromptResponseService.extract_content(hf_response)
             usage = ProcessPromptResponseService.extract_usage(hf_response)
 
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = True,
                 message = PromptApiSuccessMessages.AI_RESPONSE_NORMALIZATION.value,
                 data = {
@@ -72,7 +72,7 @@ class ProcessPromptResponseService:
             )
         except Exception as e:
             error_logger.error(f"ProcessPromptResponseService.normalize | error = {str(e)}")
-            return ProcessPromptResponseServiceClassResponse(
+            return ServiceClassResponse(
                 status = False,
                 message = str(e)
             )

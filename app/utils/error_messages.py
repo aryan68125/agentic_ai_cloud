@@ -7,6 +7,9 @@ class PromptApiErrorMessages(Enum):
     # Field related errors
     USER_PROMPT_EMPTY = "User prompt cannot be empty!"
 
+    # db operation errors
+    SYSTEM_PROMPT_NOT_FOUND = "System prompt not found"
+
 class SystemPromptApiErrorMessages(Enum):
     SYSTEM_PROMPT_EMPTY = "System prompt cannot be empty!"
 

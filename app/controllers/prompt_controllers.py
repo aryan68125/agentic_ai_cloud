@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, BackgroundTasks
 import uuid
 
-from app.models.api_request_response_model.response_models import APIResponse
+from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
 
 # import common success and error messages
 from app.utils.error_messages import PromptApiErrorMessages
@@ -59,20 +59,21 @@ class PromptController:
             )
         
     
-    def process_system_prompt(self, request, operation_type : str) -> APIResponse:
+    def process_system_prompt(self, request, operation_type : str) -> APIResponseMultipleData:
         try:
             info_logger.info(f"PromptController.process_system_prompt | Started to process system prompt | operation_type = {operation_type} | agent_id = {request.agent_id} , system_prompt = {request.system_prompt}")
             
             if operation_type == DbRecordLevelOperationType.INSERT.value:
                 info_logger.info(f"PromptController.process_system_prompt | insert agent name in the database")
-                result = self.system_prompt_repo.insert(request.agent_name)
+                result = self.system_prompt_repo.insert(agent_id = request.agent_id, system_prompt = request.system_prompt)
+                if not result.status:
+                    error_logger.error(f"PromptController.process_system_prompt | error = {result.message}")
                 debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
 
-            return APIResponse(
-                status = status.HTTP_200_OK,
+            return APIResponseMultipleData(
+                status = result.status_code,
                 message = result.message,
                 data=result.data
-
             )
         except Exception as e:
             error_logger.error(f"PromptController.process_system_prompt | {str(e)}")

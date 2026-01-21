@@ -6,13 +6,14 @@ from psycopg.rows import dict_row
 from app.utils.success_messages import AiAgentApiSuccessMessage
 from app.utils.error_messages import AgentApiErrorMessages
 
-# import logging utility
-from app.utils.logger import LoggerFactory
-
 # import class response model
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
 
+# import status codes from fast-api
 from fastapi import status
+
+# import logging utility
+from app.utils.logger import LoggerFactory
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()

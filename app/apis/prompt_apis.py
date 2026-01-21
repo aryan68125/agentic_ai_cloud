@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, Request
 
 # import request response model
 from app.models.api_request_response_model.request_models import (PromptRequest, SystemPromptRequest)
-from app.models.api_request_response_model.response_models import APIResponse
+from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
 
 # import controllers
 from app.controllers.prompt_controllers import PromptController
@@ -40,12 +40,12 @@ async def process_user_prompt_api(
     info_logger.info(f"process_user_prompt_api | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return await controller.process_user_prompt(request)
 
-@router.post("/system_prompt/create", response_model=APIResponse)
-async def create_system_prompt(
+@router.post("/system_prompt/create", response_model=APIResponseMultipleData)
+def create_system_prompt(
     request: SystemPromptRequest,
     http_request: Request,
     controller: PromptController = Depends(get_prompt_controller)
 ):
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"create_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.CREATE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-    return await controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.INSERT.value)
+    return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.INSERT.value)
