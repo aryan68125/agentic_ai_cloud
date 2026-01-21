@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 # custom routes
 from app.apis.prompt_apis import router as prompt_api_routers
 from app.apis.hugging_face_api import router as hugging_face_api_routers
+from app.apis.agent_api import router as agent_api_routers
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -13,6 +14,12 @@ from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
 
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
+
+# database related imports
+from app.utils.db_conn_manager import PostgresConnectionManager
+
+# import database bootstrap
+from app.utils.db_bootstrap import DatabaseBootstrap
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -25,6 +32,7 @@ app = FastAPI(title = "Relevance Agentic AI")
 # ingest_data router
 app.include_router(prompt_api_routers, prefix="/process")
 app.include_router(hugging_face_api_routers, prefix="/hugging_face")
+app.include_router(agent_api_routers, prefix="/process")
 
 # Global error exception response handler
 @app.exception_handler(HTTPException)
@@ -36,6 +44,21 @@ async def http_exception_handler(request: Request, exc: HTTPException):
             "error": exc.detail
         }
     )
+
+# This makes sure that the database exists before any query is executed using the db connection pool
+@app.on_event("startup")
+def startup():
+    # ensure 
+    db_bootstrap = DatabaseBootstrap()
+    db_bootstrap.ensure_database_exists()
+
+    PostgresConnectionManager.get_pool()
+
+# This closes the db connection pool when fast-api server is stopped
+@app.on_event("shutdown")
+def shutdown():
+    pool = PostgresConnectionManager.get_pool()
+    pool.close()
 
 # Test api
 @app.get("/health",status_code = status.HTTP_200_OK)

@@ -32,11 +32,26 @@ class ProcessPromptService:
             
             headers = {"Authorization": f"Bearer {self.hugging_face_auth_token}"}
             
+            # Below is the explaination on how the body should be constructed before sending it to the hugging face LLM
+            # body = {
+            #     "model": request.ai_model,
+            #     "messages": [
+            #         """
+            #             Here you will tell the model how to behave
+            #         """
+            #         # {"role": "system", "content": "You are a helpful assistant."},
+            #         """
+            #             Here the end user will write the prompt for it to gain answers from the LLM
+            #         """
+            #         {"role": "user", "content": request.user_prompt}
+            #     ]
+            # }
+
             body = {
                 "model": request.ai_model,
                 "messages": [
-                    # {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": request.prompt_message}
+                    {"role": "system", "content": request.system_prompt},
+                    {"role": "user", "content": request.user_prompt}
                 ]
             }
 

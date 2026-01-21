@@ -19,8 +19,11 @@ class ProjectConfigurations(Enum):
     # ---------------------------------------------------------------------------------------------------------------------------------
     # DATABASE RELATED CONFIGURATIONS
     # ---------------------------------------------------------------------------------------------------------------------------------
-    DB_FOLDER_NAME = "ingestion_state_data"
-    DB_NAME = "ingestion_state.db"
+    DB_CONNECTION_STRING : str = config(
+        "DB_CONNECTION_STRING",
+        default=None,
+        cast=str
+    )
 
     # ---------------------------------------------------------------------------------------------------------------------------------
     # HUGGINGFACE RELATED CONFIGURATIONS
