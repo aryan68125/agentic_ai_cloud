@@ -2,8 +2,17 @@ import hashlib
 import time
 from psycopg.rows import dict_row
 
+# import messages
+from app.utils.success_messages import AiAgentApiSuccessMessage
+from app.utils.error_messages import AgentApiErrorMessages
+
 # import logging utility
 from app.utils.logger import LoggerFactory
+
+# import class response model
+from app.models.class_return_model.services_class_response_models import AIAgentRepositoryClassResponse
+
+from fastapi import status
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -37,79 +46,186 @@ class AIAgentRepository:
 
     # ---------- CRUD OPERATIONS ----------
 
-    def insert(self, agent_name: str) -> dict:
-        agent_id = self._generate_agent_id(agent_name)
-
-        with self.pool.connection() as conn:
-            conn.row_factory = dict_row
-            row = conn.execute("""
-                INSERT INTO ai_agent_table (
-                    ai_agent_name,
-                    ai_agent_id,
-                    created_at,
-                    updated_at
-                )
-                VALUES (%s, %s, now(), now())
-                RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
-            """, (agent_name, agent_id)).fetchone()
-        debug_logger.debug(f"AIAgentRepository.insert | insert agent_name | db_response = {row}")
-        return row
-
-    def update(self, agent_id: str, new_name: str) -> dict:
-        with self.pool.connection() as conn:
-            conn.row_factory = dict_row
-            row = conn.execute("""
-                UPDATE ai_agent_table
-                SET
-                    ai_agent_name = %s,
-                    updated_at = now()
-                WHERE ai_agent_id = %s
-                RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
-            """, (new_name, agent_id)).fetchone()
-        debug_logger.debug(f"AIAgentRepository.update | update agent_name | db_response = {row if row else None}")
-        return row if row else None
-
-    def delete(self, agent_id: str) -> bool:
-        with self.pool.connection() as conn:
-            cur = conn.execute(
-                "DELETE FROM ai_agent_table WHERE ai_agent_id = %s",
-                (agent_id,)
+    def insert(self, agent_name: str) -> AIAgentRepositoryClassResponse:
+        try:
+            agent_id = self._generate_agent_id(agent_name)
+            with self.pool.connection() as conn:
+                conn.row_factory = dict_row
+                row = conn.execute("""
+                    INSERT INTO ai_agent_table (
+                        ai_agent_name,
+                        ai_agent_id,
+                        created_at,
+                        updated_at
+                    )
+                    VALUES (%s, %s, now(), now())
+                    RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
+                """, (agent_name, agent_id)).fetchone()
+            debug_logger.debug(f"AIAgentRepository.insert | insert agent_name | db_response = {row}")
+            return AIAgentRepositoryClassResponse(
+                status = True,
+                status_code = status.HTTP_200_OK,
+                message = AiAgentApiSuccessMessage.AGENT_NAME_INSERTED.value,
+                data = row
             )
-        debug_logger.debug(f"AIAgentRepository.delete | delete agent_name | db_response = {cur.rowcount > 0}")
-        return cur.rowcount > 0
+        except Exception as e:
+            error_logger.error(f"AIAgentRepository.insert | {str(e)}")
+            return AIAgentRepositoryClassResponse(
+                status = False,
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message = str(e)
+            )
 
-    def get_one(self, agent_id: str = None, agent_name: str = None) -> dict | None:
-        with self.pool.connection() as conn:
-            conn.row_factory = dict_row
-            if agent_id:
-                debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_id | agent_id = {agent_id}")
-                row = conn.execute(
-                    "SELECT * FROM ai_agent_table WHERE ai_agent_id = %s",
+    def update(self, agent_id: str, new_name: str) -> AIAgentRepositoryClassResponse:
+        try:
+            with self.pool.connection() as conn:
+                conn.row_factory = dict_row
+                row = conn.execute("""
+                    UPDATE ai_agent_table
+                    SET
+                        ai_agent_name = %s,
+                        updated_at = now()
+                    WHERE ai_agent_id = %s
+                    RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
+                """, (new_name, agent_id)).fetchone()
+
+            if not row:
+                debug_logger.debug(
+                    f"AIAgentRepository.update | agent not found in database | agent_id = {agent_id}"
+                )
+                return AIAgentRepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
+                )
+            debug_logger.debug(f"AIAgentRepository.update | update agent_name | db_response = {row}")
+            return AIAgentRepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_200_OK,
+                    message = AiAgentApiSuccessMessage.AGENT_NAME_UPDATED.value,
+                    data = row
+                )
+        except Exception as e:
+            error_logger.error(f"AIAgentRepository.update | {str(e)}")
+            return AIAgentRepositoryClassResponse(
+                status = False,
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message = str(e)
+            ) 
+
+    def delete(self, agent_id: str) -> AIAgentRepositoryClassResponse:
+        try:
+            with self.pool.connection() as conn:
+                cur = conn.execute(
+                    "DELETE FROM ai_agent_table WHERE ai_agent_id = %s",
                     (agent_id,)
-                ).fetchone()
+                )
+            debug_logger.debug(f"AIAgentRepository.delete | delete agent_name | db_response = {cur.rowcount > 0}")
+            if cur.rowcount > 0:
+                return AIAgentRepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = AiAgentApiSuccessMessage.AGENT_NAME_DELETED.value,
+                    data = {}
+                ) 
             else:
-                debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_name | agent_name = {agent_name}")
-                row = conn.execute(
-                    "SELECT * FROM ai_agent_table WHERE ai_agent_name = %s",
-                    (agent_name,)
-                ).fetchone()
-        debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row if row else None}")
-        return row if row else None
+                return AIAgentRepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message = AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
+                ) 
+        except Exception as e:
+            error_logger.error(f"AIAgentRepository.delete | {str(e)}")
+            return AIAgentRepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                ) 
 
-    def get_all(self, page : int = 1, page_size : int = 10) -> list[dict]:
-        offset = (page - 1) * page_size
+    def get_one(self, agent_id: str = None, agent_name: str = None) -> AIAgentRepositoryClassResponse:
+        try:
+            with self.pool.connection() as conn:
+                conn.row_factory = dict_row
+                if agent_id:
+                    debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_id | agent_id = {agent_id}")
+                    row = conn.execute(
+                        "SELECT * FROM ai_agent_table WHERE ai_agent_id = %s",
+                        (agent_id,)
+                    ).fetchone()
+                else:
+                    debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_name | agent_name = {agent_name}")
+                    row = conn.execute(
+                        "SELECT * FROM ai_agent_table WHERE ai_agent_name = %s",
+                        (agent_name,)
+                    ).fetchone()
+            if not row:
+                debug_logger.debug(
+                    f"AIAgentRepository.get_one | agent not found in database | agent_id = {agent_id}"
+                )
+                return AIAgentRepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
+                )
+            debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row}")
+            return AIAgentRepositoryClassResponse(
+                        status = True,
+                        status_code = status.HTTP_200_OK,
+                        message = AiAgentApiSuccessMessage.AGENT_NAME_FETCHED.value,
+                        data = row
+                    )
+        except Exception as e:
+            error_logger.error(f"AIAgentRepository.get_one | {str(e)}")
+            return AIAgentRepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                ) 
+        
+    def _count_all(self) -> int:
         with self.pool.connection() as conn:
-            conn.row_factory = dict_row
-            rows = conn.execute(
-                """
-                    SELECT *
-                    FROM ai_agent_table
-                    ORDER BY created_at DESC
-                    LIMIT %s OFFSET %s
-                """, (page_size, offset)
-            ).fetchall()
-        debug_logger.debug(
-            f"AIAgentRepository.get_all_paginated | "
-            f"page={page}, page_size={page_size}, returned_rows={len(rows)}"
-        )
-        return [r for r in rows]
+            row = conn.execute(
+                "SELECT COUNT(*) AS count FROM ai_agent_table"
+            ).fetchone()
+        debug_logger.debug(f"AIAgentRepository._count_all | db_response = {row}")
+        return row["count"]
+
+    def get_all(self, page : int = 1, page_size : int = 10) -> AIAgentRepositoryClassResponse:
+        try:
+            offset = (page - 1) * page_size
+            with self.pool.connection() as conn:
+                conn.row_factory = dict_row
+                rows = conn.execute(
+                    """
+                        SELECT *
+                        FROM ai_agent_table
+                        ORDER BY created_at DESC
+                        LIMIT %s OFFSET %s
+                    """, (page_size, offset)
+                ).fetchall()
+            total_records = self._count_all()
+            total_pages = (total_records + page_size - 1) // page_size
+            debug_logger.debug(
+                "AIAgentRepository.get_all | "
+                f"page={page}, page_size={page_size}, "
+                f"returned_rows={len(rows)}, total_records={total_records}, total_pages={total_pages}"
+            )
+            return AIAgentRepositoryClassResponse(
+                status=True,
+                status_code=status.HTTP_200_OK,
+                message=AiAgentApiSuccessMessage.AGENT_NAME_FETCHED.value,
+                data={
+                    "items": rows,
+                    "page": page,
+                    "page_size": page_size,
+                    "total_records": total_records,
+                    "total_pages": total_pages
+                }
+            )
+        except Exception as e:
+            error_logger.error(f"AIAgentRepository.get_all | {str(e)}")
+            return AIAgentRepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                ) 
