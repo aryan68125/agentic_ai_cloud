@@ -11,7 +11,7 @@ class ProcessPromptResponseServiceClassResponse(BaseModel):
     message : str = Field(default = None)
     data : Optional[Dict[str , Any]] = Field(default_factory=dict)
 
-class AIAgentRepositoryClassResponse(BaseModel):
+class RepositoryClassResponse(BaseModel):
     status : bool = Field(default_factory = False)
     status_code : Optional[int] = Field(default_factory=None)
     message : str = Field(default = None)
