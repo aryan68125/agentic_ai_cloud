@@ -145,9 +145,23 @@ class PromptRequest(BaseModel):
             )
         return self
 
+class UserPromptRequest(BaseModel):
+    agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
+    user_prompt : Optional[str] = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"UserPromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+            )
+        return self
+
 class SystemPromptRequest(BaseModel):
     agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
-    system_prompt : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.SYSTEM_PROMPT_MESSAGE.value)
+    ai_model : Optional[str] = Field(default="meta-llama/Llama-3.1-8B-Instruct",description=PromptRequestFieldDescriptions.AI_MODEL.value)
+    system_prompt : Optional[str] = Field(default_factory=None, description = SystemPromptRequestFieldDescription.SYSTEM_PROMPT_MESSAGE.value)
     @model_validator(mode="after")
     def validate_fields(self):
         if not self.agent_id:

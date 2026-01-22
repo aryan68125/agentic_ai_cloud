@@ -7,7 +7,7 @@ from app.repositories.ai_agent_repository import AIAgentRepository
 
 # import messages
 from app.utils.success_messages import PromptApiSuccessMessages
-from app.utils.error_messages import (PromptApiErrorMessages,AgentApiErrorMessages,SystemPromptApiErrorMessages)
+from app.utils.error_messages import (AgentApiErrorMessages,SystemPromptApiErrorMessages)
 
 # import class response model
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
@@ -40,6 +40,7 @@ class SystemPromptRepository:
                 id BIGSERIAL PRIMARY KEY,
                 llm_system_prompt TEXT NOT NULL,
                 ai_agent_id TEXT NOT NULL UNIQUE,
+                ai_model TEXT NOT NULL,
                 created_at TIMESTAMPTZ DEFAULT now(),
                 updated_at TIMESTAMPTZ DEFAULT now()
             )
@@ -73,7 +74,7 @@ class SystemPromptRepository:
                 message = str(e)
             )
     
-    def insert(self,agent_id : str, system_prompt : str) -> RepositoryClassResponse:
+    def insert(self,agent_id : str, ai_model : str, system_prompt : str) -> RepositoryClassResponse:
         try:
             if not system_prompt or system_prompt is None or system_prompt == "":
                 debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
@@ -95,12 +96,13 @@ class SystemPromptRepository:
                     INSERT INTO system_prompt_table (
                         llm_system_prompt,
                         ai_agent_id,
+                        ai_model,
                         created_at,
                         updated_at
                     )
-                    VALUES (%s, %s, now(), now())
-                    RETURNING id, llm_system_prompt, ai_agent_id, created_at, updated_at
-                """, (system_prompt, agent_id)).fetchone()
+                    VALUES (%s, %s, %s,now(), now())
+                    RETURNING id, llm_system_prompt, ai_agent_id, ai_model,created_at, updated_at
+                """, (system_prompt, agent_id, ai_model)).fetchone()
             debug_logger.debug(f"SystemPromptRepository.insert | insert system_prompt | db_response = {row}")
             return RepositoryClassResponse(
                 status=True,
@@ -115,25 +117,39 @@ class SystemPromptRepository:
                 message=str(e)
             )
     
-    def update(self, agent_id: str, system_prompt: str) -> RepositoryClassResponse:
+    def update(self, agent_id: str, ai_model : str, system_prompt: str) -> RepositoryClassResponse:
         try:
-            if not system_prompt or system_prompt is None or system_prompt == "":
-                debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
+            if (not system_prompt or system_prompt is None or system_prompt == "") and (not ai_model or ai_model is None or ai_model == ""):
+                debug_logger.debug(f"SystemPromptRepository.update | Both system_prompt and ai_model is not provided in the request body")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
-                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_AND_AI_MODEL_EMPTY.value
                 )
+            
+            set_clauses = []
+            values = []
+            if (not system_prompt or system_prompt is None or system_prompt == ""):
+                set_clauses.append("ai_model = %s")
+                values.append(ai_model)
+            if (not ai_model or ai_model is None or ai_model == ""):
+                set_clauses.append("llm_system_prompt = %s")
+                values.append(system_prompt)
+            # Always update timestamp
+            set_clauses.append("updated_at = now()")
+
+            values.append(agent_id)
+
+            query = f"""
+                UPDATE system_prompt_table
+                SET {', '.join(set_clauses)}
+                WHERE ai_agent_id = %s
+                RETURNING id, ai_model, llm_system_prompt, ai_agent_id, created_at, updated_at
+            """
+
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
-                row = conn.execute("""
-                    UPDATE system_prompt_table
-                    SET
-                        llm_system_prompt = %s,
-                        updated_at = now()
-                    WHERE ai_agent_id = %s
-                    RETURNING id, llm_system_prompt, ai_agent_id, created_at, updated_at
-                """, (system_prompt, agent_id)).fetchone()
+                row = conn.execute(query, tuple(values)).fetchone()
 
             if not row:
                 debug_logger.debug(
@@ -200,7 +216,7 @@ class SystemPromptRepository:
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
                 row = conn.execute(
-                    "SELECT * FROM ai_agent_table WHERE ai_agent_id = %s",
+                    "SELECT * FROM system_prompt_table WHERE ai_agent_id = %s",
                     (agent_id,)
                 ).fetchone()
                 debug_logger.debug(f"AIAgentRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
