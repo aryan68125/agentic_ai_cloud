@@ -30,6 +30,9 @@ debug_logger = LoggerFactory.get_debug_logger()
 def get_agent_controller():
     return AgentController()
 
+"""
+CRUD Apis for Agent that is unique and is tied to the user STARTS
+"""
 @router.post("/agent/create", response_model=APIResponse)
 def create_agent(
     request: AgentRequest,
@@ -74,3 +77,6 @@ def get_agent(
         return controller.process_agent(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
     if not request.agent_id and request.agent_name:
         return controller.process_agent(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
+"""
+CRUD Apis for Agent that is unique and is tied to the user ENDS
+"""

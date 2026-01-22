@@ -10,11 +10,17 @@ class PromptApiUrls(Enum):
     FAST_API_HEALTH_CHECK_URL = "/health"
     PROMPT_API_URL = "/process/user_prompt"
 
-class SystemApiUrls(Enum):
-    CREATE_SYSTEM_API_URL = "/process/system_prompt/create"
-    UPDATE_SYSTEM_API_URL = "/process/system_prompt/update"
-    DELETE_SYSTEM_API_URL = "/process/system_prompt/delete"
-    GET_SYSTEM_API_URL = "/process/system_prompt/get"
+class UserPromptApiUrls(Enum):
+    CREATE_USER_PROMPT_API_URL = "/process/user_prompt/create"
+    UPDATE_USER_PROMPT_API_URL = "/process/user_prompt/update"
+    DELETE_USER_PROMPT_API_URL = "/process/user_prompt/delete"
+    GET_USER_PROMPT_API_URL = "/process/user_prompt/get"
+
+class SystemPromptApiUrls(Enum):
+    CREATE_SYSTEM_PROMPT_API_URL = "/process/system_prompt/create"
+    UPDATE_SYSTEM_PROMPT_API_URL = "/process/system_prompt/update"
+    DELETE_SYSTEM_PROMPT_API_URL = "/process/system_prompt/delete"
+    GET_SYSTEM_PROMPT_API_URL = "/process/system_prompt/get"
 
 class HuggingFaceAPIUrls(Enum):
     HUGGING_FACE_GET_AI_MODELS = "/hugging_face/get_ai_models"

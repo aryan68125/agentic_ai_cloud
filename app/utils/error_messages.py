@@ -11,7 +11,7 @@ class PromptApiErrorMessages(Enum):
     SYSTEM_PROMPT_NOT_FOUND = "System prompt not found"
 
 class SystemPromptApiErrorMessages(Enum):
-    SYSTEM_PROMPT_EMPTY = "System prompt cannot be empty!"
+    SYSTEM_PROMPT_AND_AI_MODEL_EMPTY = "System prompt field and ai_model field both of them cannot be empty! You have to either provide system_prompt If you wish to update system_prompt or ai_model if you wish to update ai_model"
 
     # db operation errors
     SYSTEM_PROMPT_NOT_FOUND = "System prompt for AI Agent with the agent_id ({}) is not found in the database"
