@@ -121,6 +121,8 @@ class AgentController:
                 message = result.message,
                 data=result.data
             )
+        except HTTPException:
+            raise
         except Exception as e:
             error_logger.error(f"AgentController.process_agent | {str(e)}")
             raise HTTPException(

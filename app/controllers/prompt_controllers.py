@@ -51,6 +51,8 @@ class PromptController:
                 data=result.data
 
             )
+        except HTTPException:
+            raise
         except Exception as e:
             error_logger.error(f"PromptController.process_user_prompt | {str(e)}")
             raise HTTPException(
@@ -100,11 +102,30 @@ class PromptController:
                         detail=result.message)
                 debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
 
+            elif operation_type == DbRecordLevelOperationType.GET_ONE.value:
+                info_logger.info(f"PromptController.process_system_prompt | get one system prompt for the agent_id-> ({request.agent_id}) from the database")
+                result = self.system_prompt_repo.get_one(
+                    agent_id=request.agent_id
+                )
+                if not result.status:
+                    error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code, 
+                        detail=result.message)
+                debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
+            else:
+                error_logger.error(f"PromptController.process_system_prompt | {AgentApiErrorMessages.UNDEFINED_DB_OPERATION_TYPE.value}")
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=AgentApiErrorMessages.UNDEFINED_DB_OPERATION_TYPE.value
+                )
             return APIResponseMultipleData(
                 status = result.status_code,
                 message = result.message,
                 data=result.data
             )
+        except HTTPException:
+            raise
         except Exception as e:
             error_logger.error(f"PromptController.process_system_prompt | {str(e)}")
             raise HTTPException(
