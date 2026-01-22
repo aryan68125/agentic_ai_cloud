@@ -73,8 +73,15 @@ class SystemPromptRepository:
                 message = str(e)
             )
     
-    def insert(self,agent_id, system_prompt) -> RepositoryClassResponse:
+    def insert(self,agent_id : str, system_prompt : str) -> RepositoryClassResponse:
         try:
+            if not system_prompt or system_prompt is None or system_prompt == "":
+                debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                )
             result = self.check_if_ai_agent_name_exists(agent_id)
             if not result.status:
                 return RepositoryClassResponse(
@@ -110,6 +117,13 @@ class SystemPromptRepository:
     
     def update(self, agent_id: str, system_prompt: str) -> RepositoryClassResponse:
         try:
+            if not system_prompt or system_prompt is None or system_prompt == "":
+                debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                )
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
                 row = conn.execute("""
@@ -144,3 +158,32 @@ class SystemPromptRepository:
                 status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message = str(e)
             )  
+        
+    def delete(self, agent_id: str) -> RepositoryClassResponse:
+        try:
+            with self.pool.connection() as conn:
+                cur = conn.execute(
+                    "DELETE FROM system_prompt_table WHERE ai_agent_id = %s",
+                    (agent_id,)
+                )
+            debug_logger.debug(f"SystemPromptRepository.delete | delete system_prompt | db_response = {cur.rowcount > 0}")
+            if cur.rowcount > 0:
+                return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = PromptApiSuccessMessages.SYSTEM_PROMPT_DELETED.value,
+                    data = {}
+                ) 
+            else:
+                return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message = SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
+                ) 
+        except Exception as e:
+            error_logger.error(f"SystemPromptRepository.delete | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+            )

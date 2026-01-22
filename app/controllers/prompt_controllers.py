@@ -90,6 +90,16 @@ class PromptController:
                     )
                 debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
 
+            elif operation_type == DbRecordLevelOperationType.DELETE.value:
+                info_logger.info(f"PromptController.process_system_prompt | delete agent name in the database")
+                result = self.system_prompt_repo.delete(request.agent_id)
+                if not result.status:
+                    error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code, 
+                        detail=result.message)
+                debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
+
             return APIResponseMultipleData(
                 status = result.status_code,
                 message = result.message,

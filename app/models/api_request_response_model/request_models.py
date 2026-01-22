@@ -156,12 +156,6 @@ class SystemPromptRequest(BaseModel):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
             )
-        if not self.system_prompt:
-            error_logger.error(f"SystemPromptRequest.validate_fields | error = {SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
-            )
         return self
 
 class AgentRequest(BaseModel):

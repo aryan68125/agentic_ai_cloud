@@ -59,3 +59,13 @@ def update_system_prompt(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"create_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.UPDATE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.UPDATE.value)
+
+@router.delete("/system_prompt/delete", response_model=APIResponseMultipleData)
+def delete_system_prompt(
+    request: SystemPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"create_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.DELETE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
