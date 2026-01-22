@@ -2,12 +2,23 @@ from enum import Enum
 
 class PromptApiSuccessMessages(Enum):
 
-    # API related success messages
+    # user prompt API related success messages
     PROCESSED_PROMPT = "Prompt processed successfully!"
     AI_RESPONSE_PROCESSING_EXTRACT_CONTENT = "Content extraction from hugging face response successfull!"
     AI_RESPONSE_PROCESSING_EXTRACT_API_USAGE = "AI api usage extracted successfully!"
     AI_RESPONSE_NORMALIZATION = "Response normalization successfull!"
 
+    # system prompt API related success messages
+    SYSTEM_PROMPT_INSERTED = "System prompt inserted successfully!"
+    SYSTEM_PROMPT_UPDATED = "System prompt updated successfully!"
+    SYSTEM_PROMPT_DELETED = "System prompt delete success!"
+    SYSTEM_PROMPT_FETCHED = "System prompt fetched successfully!"
+
 class HuggingFaceAIModelAPISuccessMessage(Enum):
     FETCH_LIST_OF_AI_MODELS = "List of ai models fetched successfully!"
-    
+
+class AiAgentApiSuccessMessage(Enum):
+    AGENT_NAME_INSERTED = "AI Agent name inserted successfully!"
+    AGENT_NAME_UPDATED = "AI Agent name updated successfully!"
+    AGENT_NAME_DELETED = "AI Agent name delete success!"
+    AGENT_NAME_FETCHED = "AI Agent name fetched successfully!"

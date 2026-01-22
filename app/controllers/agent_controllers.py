@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, BackgroundTasks
 import uuid
 
-from app.models.prompt_api_models.response_models import (APIResponse,APIResponseMultipleData)
+from app.models.api_request_response_model.response_models import (APIResponse,APIResponseMultipleData)
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -35,6 +35,12 @@ class AgentController:
             if operation_type == DbRecordLevelOperationType.INSERT.value:
                 info_logger.info(f"AgentController.process_agent | insert agent name in the database")
                 result = self.ai_agent_repo.insert(request.agent_name)
+                if not result.status:
+                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
+                    raise HTTPException(
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        detail=result.message
+                    )
                 debug_logger.debug(f"AgentController.process_agent | result = {result}")
 
             elif operation_type == DbRecordLevelOperationType.UPDATE.value:
@@ -49,34 +55,45 @@ class AgentController:
                     agent_id=request.agent_id,
                     new_name=request.agent_name
                 )
-                debug_logger.debug(f"AgentController.process_agent | result = {result}")
-                if not result:
-                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value}")
+                if not result.status:
+                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, 
-                        detail=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
+                        status_code=result.status_code, 
+                        detail=result.message
                     )
+                debug_logger.debug(f"AgentController.process_agent | result = {result}")
                 
             elif operation_type == DbRecordLevelOperationType.DELETE.value:
                 info_logger.info(f"AgentController.process_agent | delete agent name in the database")
-                deleted = self.ai_agent_repo.delete(request.agent_id)
-                debug_logger.debug(f"AgentController.process_agent | deleted = {deleted}")
-                if not deleted:
-                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value}")
+                result = self.ai_agent_repo.delete(request.agent_id)
+                if not result.status:
+                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, 
-                        detail=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value)
-                result = {"deleted": True}
+                        status_code=result.status_code, 
+                        detail=result.message)
                 debug_logger.debug(f"AgentController.process_agent | result = {result}")
            
             elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
                 info_logger.info(f"AgentController.process_agent | get all agent's name from the database")
-                result = self.ai_agent_repo.get_all()
+                if request.page is None or request.page < 1:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail=AgentApiErrorMessages.PAGE_NUMBER_EMPTY.value) 
+                if request.page_size is None or request.page_size < 1:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST, 
+                        detail=AgentApiErrorMessages.PAGE_SIZE_EMPTY.value) 
+                result = self.ai_agent_repo.get_all(page = request.page,page_size = request.page_size)
+                if not result.status:
+                    error_logger.error(f"AgentController.process_agent | {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code,
+                        detail=result.message
+                    )
                 debug_logger.debug(f"AgentController.process_agent | result = {result}")
 
             elif operation_type == DbRecordLevelOperationType.GET_ONE.value:
                 info_logger.info(f"AgentController.process_agent | get one agent name from the database")
-
                 if not request.agent_id and request.agent_name:
                     error_logger.error(f"AgentController.process_agent | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
                     raise HTTPException(
@@ -87,12 +104,12 @@ class AgentController:
                     agent_id=request.agent_id,
                     agent_name=request.agent_name
                 )
-                debug_logger.debug(f"AgentController.process_agent | result = {result}")
-                if not result:
-                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value}")
+                if not result.status:
+                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND, 
-                        detail=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value)
+                        status_code=result.status_code, 
+                        detail=result.message)
+                debug_logger.debug(f"AgentController.process_agent | result = {result}")
             else:
                 error_logger.error(f"AgentController.process_agent | {AgentApiErrorMessages.UNDEFINED_DB_OPERATION_TYPE.value}")
                 raise HTTPException(
@@ -100,10 +117,12 @@ class AgentController:
                     detail=AgentApiErrorMessages.UNDEFINED_DB_OPERATION_TYPE.value
                 )
             return APIResponseMultipleData(
-                status = status.HTTP_200_OK,
-                message = "agent processed successfully!",
-                data=result
+                status = result.status_code,
+                message = result.message,
+                data=result.data
             )
+        except HTTPException:
+            raise
         except Exception as e:
             error_logger.error(f"AgentController.process_agent | {str(e)}")
             raise HTTPException(

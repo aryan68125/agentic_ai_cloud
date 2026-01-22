@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status, BackgroundTasks
 import uuid
 
-from app.models.prompt_api_models.response_models import APIResponse
+from app.models.api_request_response_model.response_models import APIResponse
 
 # import common success and error messages
 from app.utils.error_messages import PromptApiErrorMessages

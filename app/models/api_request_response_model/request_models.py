@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, model_validator
 from fastapi import HTTPException, status
 from typing import List, Dict, Any, Optional
-from app.utils.error_messages import (PromptApiErrorMessages, AgentApiErrorMessages)
-from app.utils.field_descriptions import (PromptRequestFieldDescriptions, AgentRequestFieldDescription)
+from app.utils.error_messages import (PromptApiErrorMessages, SystemPromptApiErrorMessages, AgentApiErrorMessages)
+from app.utils.field_descriptions import (PromptRequestFieldDescriptions, AgentRequestFieldDescription, SystemPromptRequestFieldDescription)
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -135,7 +135,7 @@ class PromptRequest(BaseModel):
             error_logger.error(f"PromptRequest.validate_fields | error = {PromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=PromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                detail=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
             )
         if not self.user_prompt:
             error_logger.error(f"PromptRequest.validate_fields | error = {PromptApiErrorMessages.USER_PROMPT_EMPTY.value}")
@@ -144,8 +144,22 @@ class PromptRequest(BaseModel):
                 detail=PromptApiErrorMessages.USER_PROMPT_EMPTY.value
             )
         return self
-    
+
+class SystemPromptRequest(BaseModel):
+    agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
+    system_prompt : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.SYSTEM_PROMPT_MESSAGE.value)
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"SystemPromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+            )
+        return self
 
 class AgentRequest(BaseModel):
     agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
     agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+    page: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_NUMBER.value)
+    page_size: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_SIZE.value)

@@ -8,12 +8,20 @@ This enum of urls is only used in info type logger and is not used by fast api f
 """
 class PromptApiUrls(Enum):
     FAST_API_HEALTH_CHECK_URL = "/health"
+    PROMPT_API_URL = "/process/user_prompt"
 
-    PROMPT_API_URL = "/process/prompt"
+class SystemApiUrls(Enum):
+    CREATE_SYSTEM_API_URL = "/process/system_prompt/create"
+    UPDATE_SYSTEM_API_URL = "/process/system_prompt/update"
+    DELETE_SYSTEM_API_URL = "/process/system_prompt/delete"
+    GET_SYSTEM_API_URL = "/process/system_prompt/get"
 
 class HuggingFaceAPIUrls(Enum):
     HUGGING_FACE_GET_AI_MODELS = "/hugging_face/get_ai_models"
 
 class AgentApiUrls(Enum):
     CREATE_AGENT_API_URL = "/process/agent/create"
+    UPDATE_AGENT_API_URL = "/process/agent/update"
+    DELETE_AGENT_API_URL = "/process/agent/delete"
+    GET_AGENT_API_URL = "/process/agent/get"
 

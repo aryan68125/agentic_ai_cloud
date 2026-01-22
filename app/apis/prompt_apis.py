@@ -2,8 +2,8 @@
 from fastapi import APIRouter, Depends, BackgroundTasks, Request
 
 # import request response model
-from app.models.prompt_api_models.request_models import PromptRequest
-from app.models.prompt_api_models.response_models import APIResponse
+from app.models.api_request_response_model.request_models import (PromptRequest, SystemPromptRequest)
+from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
 
 # import controllers
 from app.controllers.prompt_controllers import PromptController
@@ -12,10 +12,13 @@ from app.controllers.prompt_controllers import PromptController
 from app.utils.logger import LoggerFactory
 
 # import info logger messages
-from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
+from app.utils.logger_info_messages import (LoggerInfoMessages, PromptApiUrls, SystemApiUrls)
 
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
+
+# get db operation type
+from app.utils.db_operation_type import DbRecordLevelOperationType
 
 router = APIRouter(tags=["Prompt_processing_apis"])
 
@@ -27,12 +30,52 @@ debug_logger = LoggerFactory.get_debug_logger()
 def get_prompt_controller():
     return PromptController()
 
-@router.post("/prompt", response_model=APIResponse)
-async def prompt_page(
+@router.post("/user_prompt", response_model=APIResponse)
+async def process_user_prompt_api(
     request: PromptRequest,
     http_request: Request,
     controller: PromptController = Depends(get_prompt_controller)
 ):
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"prompt_page | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-    return await controller.process_prompt(request)
+    info_logger.info(f"process_user_prompt_api | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return await controller.process_user_prompt(request)
+
+@router.post("/system_prompt/create", response_model=APIResponseMultipleData)
+def create_system_prompt(
+    request: SystemPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"create_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.CREATE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.INSERT.value)
+
+@router.put("/system_prompt/update", response_model=APIResponseMultipleData)
+def update_system_prompt(
+    request: SystemPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"update_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.UPDATE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.UPDATE.value)
+
+@router.delete("/system_prompt/delete", response_model=APIResponseMultipleData)
+def delete_system_prompt(
+    request: SystemPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.DELETE_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
+
+@router.post("/system_prompt/get", response_model=APIResponseMultipleData)
+def get_system_prompt(
+    request: SystemPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):  
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"get_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemApiUrls.GET_SYSTEM_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_system_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
