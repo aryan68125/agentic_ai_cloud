@@ -53,13 +53,13 @@ class SystemPromptRepository:
                     agent_id=agent_id
                 )
             if not result.status:
-                error_logger.error(f"AgentController.check_if_ai_agent_name_exists | operation_type = {DbRecordLevelOperationType.GET_ONE.value} | error = {result.message}")
+                error_logger.error(f"SystemPromptRepository.check_if_ai_agent_name_exists | operation_type = {DbRecordLevelOperationType.GET_ONE.value} | error = {result.message}")
                 return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_404_NOT_FOUND,
                     message = AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
                 )
-            debug_logger.debug(f"AgentController.check_if_ai_agent_name_exists | result = {result}")
+            debug_logger.debug(f"SystemPromptRepository.check_if_ai_agent_name_exists | result = {result}")
             return RepositoryClassResponse(
                     status = True,
                     status_code = result.status_code,
@@ -77,11 +77,18 @@ class SystemPromptRepository:
     def insert(self,agent_id : str, ai_model : str, system_prompt : str) -> RepositoryClassResponse:
         try:
             if not system_prompt or system_prompt is None or system_prompt == "":
-                debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
+                debug_logger.debug(f"SystemPromptRepository.insert | System prompt is not provided in the request | system_prompt = {system_prompt}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                )
+            if not ai_model or ai_model is None or ai_model == "":
+                debug_logger.debug(f"SystemPromptRepository.insert | AI model name is not provided in the request | ai_model = {ai_model}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=SystemPromptApiErrorMessages.AI_MODEL_NAME_EMPTY.value
                 )
             result = self.check_if_ai_agent_name_exists(agent_id)
             if not result.status:

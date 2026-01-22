@@ -7,7 +7,7 @@ from app.repositories.ai_agent_repository import AIAgentRepository
 
 # import messages
 from app.utils.success_messages import PromptApiSuccessMessages
-from app.utils.error_messages import (AgentApiErrorMessages,SystemPromptApiErrorMessages)
+from app.utils.error_messages import (AgentApiErrorMessages,SystemPromptApiErrorMessages, UserPromptApiErrorMessages)
 
 # import class response model
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
@@ -38,8 +38,8 @@ class UserPromptRepository:
             conn.execute("""
             CREATE TABLE IF NOT EXISTS user_prompt_table (
                 id BIGSERIAL PRIMARY KEY,
-                llm_system_prompt TEXT NOT NULL,
-                ai_agent_id TEXT NOT NULL UNIQUE,
+                llm_user_prompt TEXT NOT NULL,
+                ai_agent_id TEXT NOT NULL,
                 created_at TIMESTAMPTZ DEFAULT now(),
                 updated_at TIMESTAMPTZ DEFAULT now()
             )
@@ -52,13 +52,13 @@ class UserPromptRepository:
                     agent_id=agent_id
                 )
             if not result.status:
-                error_logger.error(f"AgentController.check_if_ai_agent_name_exists | operation_type = {DbRecordLevelOperationType.GET_ONE.value} | error = {result.message}")
+                error_logger.error(f"UserPromptRepository.check_if_ai_agent_name_exists | operation_type = {DbRecordLevelOperationType.GET_ONE.value} | error = {result.message}")
                 return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_404_NOT_FOUND,
                     message = AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
                 )
-            debug_logger.debug(f"AgentController.check_if_ai_agent_name_exists | result = {result}")
+            debug_logger.debug(f"UserPromptRepository.check_if_ai_agent_name_exists | result = {result}")
             return RepositoryClassResponse(
                     status = True,
                     status_code = result.status_code,
@@ -66,21 +66,21 @@ class UserPromptRepository:
                     data=result.data
                 )
         except Exception as e:
-            error_logger.error(f"SystemPromptRepository.check_if_ai_agent_name_exists | {str(e)}")
+            error_logger.error(f"UserPromptRepository.check_if_ai_agent_name_exists | {str(e)}")
             return RepositoryClassResponse(
                 status = False,
                 status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message = str(e)
             )
     
-    def insert(self,agent_id : str, system_prompt : str) -> RepositoryClassResponse:
+    def insert(self,agent_id : str, user_prompt : str) -> RepositoryClassResponse:
         try:
-            if not system_prompt or system_prompt is None or system_prompt == "":
-                debug_logger.debug(f"SystemPromptRepository.update | System prompt is not provided in the request | system_prompt = {system_prompt}")
+            if not user_prompt or user_prompt is None or user_prompt == "":
+                debug_logger.debug(f"UserPromptRepository.insert | System prompt is not provided in the request | user_prompt = {user_prompt}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
-                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
+                    message=UserPromptApiErrorMessages.USER_PROMPT_EMPTY.value
                 )
             result = self.check_if_ai_agent_name_exists(agent_id)
             if not result.status:
@@ -92,16 +92,16 @@ class UserPromptRepository:
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
                 row = conn.execute("""
-                    INSERT INTO system_prompt_table (
-                        llm_system_prompt,
+                    INSERT INTO user_prompt_table (
+                        llm_user_prompt,
                         ai_agent_id,
                         created_at,
                         updated_at
                     )
                     VALUES (%s, %s, now(), now())
-                    RETURNING id, llm_system_prompt, ai_agent_id, created_at, updated_at
-                """, (system_prompt, agent_id)).fetchone()
-            debug_logger.debug(f"SystemPromptRepository.insert | insert system_prompt | db_response = {row}")
+                    RETURNING id, llm_user_prompt, ai_agent_id, created_at, updated_at
+                """, (user_prompt, agent_id)).fetchone()
+            debug_logger.debug(f"UserPromptRepository.insert | insert user_prompt | db_response = {row}")
             return RepositoryClassResponse(
                 status=True,
                 status_code=status.HTTP_201_CREATED,

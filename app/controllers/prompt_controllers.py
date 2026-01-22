@@ -44,11 +44,11 @@ class PromptController:
             info_logger.info(f"PromptController.process_user_prompt | Started to process user_prompt | operation_type = {operation_type} | request = {request}")
             if operation_type == DbRecordLevelOperationType.INSERT.value:
                 info_logger.info(f"PromptController.process_user_prompt | insert user_prompt in the database")
-                result = self.user_prompt_repo.insert(request.agent_name)
+                result = self.user_prompt_repo.insert(agent_id=request.agent_id, user_prompt=request.user_prompt)
                 if not result.status:
                     error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        status_code=result.status_code,
                         detail=result.message
                     )
                 debug_logger.debug(f"AgentController.process_agent | result = {result}")
@@ -102,6 +102,9 @@ class PromptController:
                 result = self.system_prompt_repo.insert(agent_id = request.agent_id, ai_model=request.ai_model,system_prompt = request.system_prompt)
                 if not result.status:
                     error_logger.error(f"PromptController.process_system_prompt | error = {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code, 
+                        detail=result.message)
                 debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
 
             elif operation_type == DbRecordLevelOperationType.UPDATE.value:
