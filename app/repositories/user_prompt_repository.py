@@ -208,11 +208,11 @@ class UserPromptRepository:
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                     message = str(e)
             )
-        
-    def get_one(self, agent_id: str = None) -> RepositoryClassResponse:
+
+    def get_all(self, agent_id: str = None) -> RepositoryClassResponse:
         try:
             if (not agent_id or agent_id is None or agent_id == ""):
-                debug_logger.debug(f"SystemPromptRepository.get_one | AI agent id is not provided | agent_id = {agent_id}")
+                debug_logger.debug(f"UserPromptRepository.get_all | AI agent id is not provided")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
@@ -221,28 +221,28 @@ class UserPromptRepository:
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
                 row = conn.execute(
-                    "SELECT * FROM ai_agent_table WHERE ai_agent_id = %s",
+                    "SELECT * FROM user_prompt_table WHERE ai_agent_id = %s ORDER BY id DESC",
                     (agent_id,)
-                ).fetchone()
-                debug_logger.debug(f"AIAgentRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
+                ).fetchall()
+                debug_logger.debug(f"UserPromptRepository.get_all | get_all user prompts for agent_id = ({agent_id}) | system_prompt = {row}")
             if not row:
                 debug_logger.debug(
-                    f"AIAgentRepository.get_one | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)} "
+                    f"UserPromptRepository.get_all | {UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)} "
                 )
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_404_NOT_FOUND,
-                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
+                    message=UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)
                 )
-            debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row}")
+            debug_logger.debug(f"UserPromptRepository.get_all | db_response = {row}")
             return RepositoryClassResponse(
                         status = True,
                         status_code = status.HTTP_200_OK,
-                        message = PromptApiSuccessMessages.SYSTEM_PROMPT_FETCHED.value,
+                        message = UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value,
                         data = row
                     )
         except Exception as e:
-            error_logger.error(f"AIAgentRepository.get_one | {str(e)}")
+            error_logger.error(f"UserPromptRepository.get_all | {str(e)}")
             return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,

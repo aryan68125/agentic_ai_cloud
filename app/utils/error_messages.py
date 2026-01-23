@@ -26,6 +26,7 @@ class UserPromptApiErrorMessages(Enum):
 
     # db error
     USER_PROMPT_NOT_FOUND = "User prompt for AI Agent with the agent_id ({}) is not found in the database"
+    USER_PROMPTS_NOT_FOUND = "List of user prompts is empty for agent_id ({})"
 
 class AgentApiErrorMessages(Enum):
     # field errors
