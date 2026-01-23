@@ -81,6 +81,16 @@ def delete_user_prompt(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.DELETE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
+
+@router.post("/user_prompt/get", response_model=APIResponseMultipleData)
+def get_user_prompt(
+    request: UserPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):  
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"get_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.GET_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_user_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ALL.value)
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name ENDS
 """

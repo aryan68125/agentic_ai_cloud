@@ -76,6 +76,18 @@ class PromptController:
                         status_code=result.status_code, 
                         detail=result.message)
                 debug_logger.debug(f"PromptController.process_user_prompt | result = {result}")
+
+            elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
+                info_logger.info(f"PromptController.process_user_prompt | get all user_prompts from database for a particular agent_id")
+                result = self.user_prompt_repo.get_all(agent_id=request.agent_id)
+                if not result.status:
+                    error_logger.error(f"PromptController.process_user_prompt | {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code,
+                        detail=result.message
+                    )
+                debug_logger.debug(f"PromptController.process_user_prompt | result = {result}")
+
             return APIResponseMultipleData(
                 status = result.status_code,
                 message = result.message,
