@@ -220,15 +220,7 @@ class UserPromptRepository:
                 )
             # hard safety cap
             limit = min(10 if limit <=0 else limit, 50)
-
-            # [OLD CODE : WORKING : REMOVE LATER]
-            # with self.pool.connection() as conn:
-            #     conn.row_factory = dict_row
-            #     row = conn.execute(
-            #         "SELECT * FROM user_prompt_table WHERE ai_agent_id = %s ORDER BY id DESC",
-            #         (agent_id,)
-            #     ).fetchall()
-            #     debug_logger.debug(f"UserPromptRepository.get_all | get_all user prompts for agent_id = ({agent_id}) | system_prompt = {row}")
+            fetch_limit = limit + 1  # 👈 key fix
 
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
@@ -243,7 +235,7 @@ class UserPromptRepository:
                         ORDER BY id DESC
                         LIMIT %s
                         """,
-                        (agent_id, before_id, limit)
+                        (agent_id, before_id, fetch_limit)
                     ).fetchall()
                 else:
                     # first page (latest messages)
@@ -255,7 +247,7 @@ class UserPromptRepository:
                         ORDER BY id DESC
                         LIMIT %s
                         """,
-                        (agent_id, limit)
+                        (agent_id, fetch_limit)
                     ).fetchall()
 
             if not rows:
@@ -274,7 +266,12 @@ class UserPromptRepository:
                 )
             debug_logger.debug(f"UserPromptRepository.get_all | before_id={before_id}, limit={limit} |db_response = {rows}")
 
-            next_cursor = rows[-1]["id"]  # smallest ID in this batch
+            has_more = len(rows) > limit
+
+            # Trim extra row if it exists
+            items = rows[:limit]
+
+            next_cursor = items[-1]["id"] if has_more else None
 
             return RepositoryClassResponse(
                         status = True,
@@ -283,7 +280,7 @@ class UserPromptRepository:
                         data={
                             "items": rows,
                             "next_cursor": next_cursor,
-                            "has_more": len(rows) == limit
+                            "has_more": has_more
                         }
                     )
         except Exception as e:

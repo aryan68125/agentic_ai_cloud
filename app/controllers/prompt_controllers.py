@@ -130,9 +130,7 @@ class PromptController:
         
     
     def process_system_prompt(self, request, operation_type : str) -> APIResponseMultipleData:
-        try:
-            info_logger.info(f"PromptController.process_system_prompt | Started to process system prompt | operation_type = {operation_type} | agent_id = {request.agent_id} , system_prompt = {request.system_prompt}")
-            
+        try:                
             if operation_type == DbRecordLevelOperationType.INSERT.value:
                 info_logger.info(f"PromptController.process_system_prompt | insert agent name in the database")
                 result = self.system_prompt_repo.insert(agent_id = request.agent_id, ai_model=request.ai_model,system_prompt = request.system_prompt)

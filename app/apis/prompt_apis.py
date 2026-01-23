@@ -1,8 +1,8 @@
 # import fast api related libraries and packages
-from fastapi import APIRouter, Depends, BackgroundTasks, Request
+from fastapi import (APIRouter, Depends, BackgroundTasks, Request, Query)
 
 # import request response model
-from app.models.api_request_response_model.request_models import (PromptRequest, SystemPromptRequest, UserPromptRequest)
+from app.models.api_request_response_model.request_models import (SystemPromptQueryParams, SystemPromptRequest,  UserPromptQueryParams, UserPromptRequest)
 from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
 
 # import controllers
@@ -82,14 +82,19 @@ def delete_user_prompt(
     info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.DELETE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
 
-@router.post("/user_prompt/get", response_model=APIResponseMultipleData)
+@router.get("/user_prompt/get", response_model=APIResponseMultipleData)
 def get_user_prompt(
-    request: UserPromptRequest,
-    http_request: Request,
+    agent_id: str = Query(default=None, description="AI Agent ID"),
+    limit: int = Query(default=10, ge=1, le=50),
+    before_id: int | None = Query(None),
+    http_request: Request = None,
     controller: PromptController = Depends(get_prompt_controller)
 ):  
-    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"get_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.GET_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    full_url = str(http_request.url)
+    info_logger.info(
+        f"get_user_prompt | url = {full_url} | {LoggerInfoMessages.API_HIT_SUCCESS.value}"
+    )
+    request = UserPromptQueryParams(agent_id=agent_id,limit=limit, before_id=before_id)
     return controller.process_user_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ALL.value)
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name ENDS
@@ -128,14 +133,17 @@ def delete_system_prompt(
     info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemPromptApiUrls.DELETE_SYSTEM_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_system_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
 
-@router.post("/system_prompt/get", response_model=APIResponseMultipleData)
+@router.get("/system_prompt/get", response_model=APIResponseMultipleData)
 def get_system_prompt(
-    request: SystemPromptRequest,
-    http_request: Request,
+    agent_id: str = Query(default=None, description="AI Agent ID"),
+    http_request: Request = None,
     controller: PromptController = Depends(get_prompt_controller)
 ):  
-    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"get_system_prompt | url = {BASE_URL_FAST_API_SERVER}{SystemPromptApiUrls.DELETE_SYSTEM_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    full_url = str(http_request.url)
+    info_logger.info(
+        f"get_system_prompt | url = {full_url} | {LoggerInfoMessages.API_HIT_SUCCESS.value}"
+    )
+    request = SystemPromptQueryParams(agent_id=agent_id)
     return controller.process_system_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
 """
 CRUD Apis for system_prompt that is tied to a unique agent ENDS
