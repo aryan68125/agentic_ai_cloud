@@ -11,13 +11,24 @@ class PromptApiErrorMessages(Enum):
     SYSTEM_PROMPT_NOT_FOUND = "System prompt not found"
 
 class SystemPromptApiErrorMessages(Enum):
-    SYSTEM_PROMPT_EMPTY = "System prompt cannot be empty!"
+    # Field errors
+    SYSTEM_PROMPT_AND_AI_MODEL_EMPTY = "System prompt field and ai_model field both of them cannot be empty! You have to either provide system_prompt If you wish to update system_prompt or ai_model if you wish to update ai_model"
+    SYSTEM_PROMPT_EMPTY = "System prompt field cannot be empty!"
+    AI_MODEL_NAME_EMPTY = "AI model name field cannot be empty!"
 
     # db operation errors
     SYSTEM_PROMPT_NOT_FOUND = "System prompt for AI Agent with the agent_id ({}) is not found in the database"
 
+class UserPromptApiErrorMessages(Enum):
+    # Field errors
+    USER_PROMPT_EMPTY = "User prompt field cannot be empty!"
+    USER_PROMPT_ID_EMPTY = "User prompt ID (Primary key) cannot be empty!"
+
+    # db error
+    USER_PROMPT_NOT_FOUND = "User prompt for AI Agent with the agent_id ({}) is not found in the database"
+
 class AgentApiErrorMessages(Enum):
-    # field erros
+    # field errors
     AI_AGENT_NAME_EMPTY = "AI agent name cannot be empty!"
     AI_AGENT_ID_EMPTY = "AI agent id cannot be empty!"
     AI_AGENT_NAME_OR_ID_REQUIRED = "Both AI agent name and AI agent id cannot be empty! atleast one of them is required!"
