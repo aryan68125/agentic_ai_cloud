@@ -90,8 +90,10 @@ def get_user_prompt(
     http_request: Request = None,
     controller: PromptController = Depends(get_prompt_controller)
 ):  
-    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"get_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.GET_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    full_url = str(http_request.url)
+    info_logger.info(
+        f"get_user_prompt | url = {full_url} | {LoggerInfoMessages.API_HIT_SUCCESS.value}"
+    )
     request={
             "agent_id": agent_id,
             "limit": limit,
