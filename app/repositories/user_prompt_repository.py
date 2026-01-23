@@ -209,7 +209,7 @@ class UserPromptRepository:
                     message = str(e)
             )
 
-    def get_all(self, agent_id: str = None) -> RepositoryClassResponse:
+    def get_all(self, agent_id: str = None, limit : int = 10, before_id : int = None) -> RepositoryClassResponse:
         try:
             if (not agent_id or agent_id is None or agent_id == ""):
                 debug_logger.debug(f"UserPromptRepository.get_all | AI agent id is not provided")
@@ -218,28 +218,73 @@ class UserPromptRepository:
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
                 )
+            # hard safety cap
+            limit = min(10 if limit <=0 else limit, 50)
+
+            # [OLD CODE : WORKING : REMOVE LATER]
+            # with self.pool.connection() as conn:
+            #     conn.row_factory = dict_row
+            #     row = conn.execute(
+            #         "SELECT * FROM user_prompt_table WHERE ai_agent_id = %s ORDER BY id DESC",
+            #         (agent_id,)
+            #     ).fetchall()
+            #     debug_logger.debug(f"UserPromptRepository.get_all | get_all user prompts for agent_id = ({agent_id}) | system_prompt = {row}")
+
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
-                row = conn.execute(
-                    "SELECT * FROM user_prompt_table WHERE ai_agent_id = %s ORDER BY id DESC",
-                    (agent_id,)
-                ).fetchall()
-                debug_logger.debug(f"UserPromptRepository.get_all | get_all user prompts for agent_id = ({agent_id}) | system_prompt = {row}")
-            if not row:
+                # keeps getting (older message)
+                if before_id:
+                    rows = conn.execute(
+                        """
+                        SELECT *
+                        FROM user_prompt_table
+                        WHERE ai_agent_id = %s
+                        AND id < %s
+                        ORDER BY id DESC
+                        LIMIT %s
+                        """,
+                        (agent_id, before_id, limit)
+                    ).fetchall()
+                else:
+                    # first page (latest messages)
+                    rows = conn.execute(
+                        """
+                        SELECT *
+                        FROM user_prompt_table
+                        WHERE ai_agent_id = %s
+                        ORDER BY id DESC
+                        LIMIT %s
+                        """,
+                        (agent_id, limit)
+                    ).fetchall()
+
+            if not rows:
                 debug_logger.debug(
-                    f"UserPromptRepository.get_all | {UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)} "
+                    f"UserPromptRepository.get_all | {UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)}"
                 )
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_404_NOT_FOUND,
-                    message=UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)
+                    message=UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id),
+                    data={
+                        "items": [],
+                        "next_cursor": None,
+                        "has_more": False
+                    }
                 )
-            debug_logger.debug(f"UserPromptRepository.get_all | db_response = {row}")
+            debug_logger.debug(f"UserPromptRepository.get_all | before_id={before_id}, limit={limit} |db_response = {rows}")
+
+            next_cursor = rows[-1]["id"]  # smallest ID in this batch
+
             return RepositoryClassResponse(
                         status = True,
                         status_code = status.HTTP_200_OK,
                         message = UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value,
-                        data = row
+                        data={
+                            "items": rows,
+                            "next_cursor": next_cursor,
+                            "has_more": len(rows) == limit
+                        }
                     )
         except Exception as e:
             error_logger.error(f"UserPromptRepository.get_all | {str(e)}")
