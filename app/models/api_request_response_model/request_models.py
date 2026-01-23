@@ -146,17 +146,9 @@ class PromptRequest(BaseModel):
         return self
 
 class UserPromptRequest(BaseModel):
-    agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
+    agent_id : Optional[str] = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
     user_prompt : Optional[str] = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
-    @model_validator(mode="after")
-    def validate_fields(self):
-        if not self.agent_id:
-            error_logger.error(f"UserPromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
-            )
-        return self
+    user_prompt_id : Optional[int] = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_ID.value)
 
 class SystemPromptRequest(BaseModel):
     agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)

@@ -14,6 +14,13 @@ class PromptApiSuccessMessages(Enum):
     SYSTEM_PROMPT_DELETED = "System prompt delete success!"
     SYSTEM_PROMPT_FETCHED = "System prompt fetched successfully!"
 
+class UserPromptApiSuccessMessages(Enum):
+    # user prompt API success messages
+    USER_PROMPT_INSERTED = "User prompt inserted successfully!"
+    USER_PROMPT_UPDATED = "User prompt updated successfully!"
+    USER_PROMPT_DELETED = "User prompt deleted successfully!"
+    USER_PROMPT_FETCHED = "User prompt fetched successfully!"
+
 class HuggingFaceAIModelAPISuccessMessage(Enum):
     FETCH_LIST_OF_AI_MODELS = "List of ai models fetched successfully!"
 

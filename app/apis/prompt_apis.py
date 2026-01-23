@@ -61,6 +61,26 @@ def create_user_prompt(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"create_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.CREATE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.INSERT.value)
+
+@router.put("/user_prompt/update", response_model=APIResponseMultipleData)
+def update_system_prompt(
+    request: UserPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"update_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.UPDATE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.UPDATE.value)
+
+@router.delete("/user_prompt/delete", response_model=APIResponseMultipleData)
+def delete_user_prompt(
+    request: UserPromptRequest,
+    http_request: Request,
+    controller: PromptController = Depends(get_prompt_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.DELETE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name ENDS
 """

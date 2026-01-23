@@ -22,6 +22,10 @@ class SystemPromptApiErrorMessages(Enum):
 class UserPromptApiErrorMessages(Enum):
     # Field errors
     USER_PROMPT_EMPTY = "User prompt field cannot be empty!"
+    USER_PROMPT_ID_EMPTY = "User prompt ID (Primary key) cannot be empty!"
+
+    # db error
+    USER_PROMPT_NOT_FOUND = "User prompt for AI Agent with the agent_id ({}) is not found in the database"
 
 class AgentApiErrorMessages(Enum):
     # field errors
