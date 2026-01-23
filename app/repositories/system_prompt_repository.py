@@ -226,17 +226,17 @@ class SystemPromptRepository:
                     "SELECT * FROM system_prompt_table WHERE ai_agent_id = %s",
                     (agent_id,)
                 ).fetchone()
-                debug_logger.debug(f"AIAgentRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
+                debug_logger.debug(f"SystemPromptRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
             if not row:
                 debug_logger.debug(
-                    f"AIAgentRepository.get_one | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)} "
+                    f"SystemPromptRepository.get_one | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)} "
                 )
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_404_NOT_FOUND,
                     message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
                 )
-            debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row}")
+            debug_logger.debug(f"SystemPromptRepository.get_one | db_response = {row}")
             return RepositoryClassResponse(
                         status = True,
                         status_code = status.HTTP_200_OK,
@@ -244,7 +244,7 @@ class SystemPromptRepository:
                         data = row
                     )
         except Exception as e:
-            error_logger.error(f"AIAgentRepository.get_one | {str(e)}")
+            error_logger.error(f"SystemPromptRepository.get_one | {str(e)}")
             return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
