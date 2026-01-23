@@ -152,9 +152,18 @@ class UserPromptRequest(BaseModel):
 
 # This is only used in get requests
 class UserPromptQueryParams(BaseModel):
-    agent_id: str = Field(default=None, description="AI Agent ID")
+    agent_id: Optional[str] = Field(default=None, description="AI Agent ID")
     limit: Optional[int] = Field(default=10, ge=1, le=50, description="Number of messages to fetch")
     before_id: Optional[int] = Field(default=None, description="Cursor for infinite scroll")
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"UserPromptQueryParams.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+            )
+        return self
 
 class SystemPromptRequest(BaseModel):
     agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
@@ -164,6 +173,19 @@ class SystemPromptRequest(BaseModel):
     def validate_fields(self):
         if not self.agent_id:
             error_logger.error(f"SystemPromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+            )
+        return self
+
+# This is only used in get requests
+class SystemPromptQueryParams(BaseModel):
+    agent_id: Optional[str] = Field(default=None, description="AI Agent ID")
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"SystemPromptQueryParams.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
