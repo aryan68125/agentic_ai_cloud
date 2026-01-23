@@ -31,7 +31,7 @@ app = FastAPI(title = "Relevance Agentic AI")
 # include custome routes here
 # ingest_data router
 app.include_router(prompt_api_routers, prefix="/process")
-app.include_router(hugging_face_api_routers, prefix="/hugging_face")
+app.include_router(hugging_face_api_routers, prefix="/process")
 app.include_router(agent_api_routers, prefix="/process")
 
 # Global error exception response handler

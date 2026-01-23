@@ -23,7 +23,7 @@ class SystemPromptApiUrls(Enum):
     GET_SYSTEM_PROMPT_API_URL = "/process/system_prompt/get"
 
 class HuggingFaceAPIUrls(Enum):
-    HUGGING_FACE_GET_AI_MODELS = "/hugging_face/get_ai_models"
+    HUGGING_FACE_GET_AI_MODELS = "/process/hugging_face/get_models"
 
 class AgentApiUrls(Enum):
     CREATE_AGENT_API_URL = "/process/agent/create"

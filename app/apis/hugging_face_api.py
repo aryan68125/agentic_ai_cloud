@@ -27,7 +27,7 @@ debug_logger = LoggerFactory.get_debug_logger()
 def get_hugging_face_ai_model_controller():
     return HuggingFaceAIModelController()
 
-@router.get("/get_ai_models", response_model=APIResponse)
+@router.get("/hugging_face/get_models", response_model=APIResponse)
 def get_ai_models(
     http_request: Request,
     controller: HuggingFaceAIModelController = Depends(get_hugging_face_ai_model_controller)

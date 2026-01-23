@@ -149,8 +149,12 @@ class UserPromptRequest(BaseModel):
     agent_id : Optional[str] = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)
     user_prompt : Optional[str] = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
     user_prompt_id : Optional[int] = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_ID.value)
-    limit : Optional[int] = Field(default=None, description = PromptRequestFieldDescriptions.LIMIT.value)
-    before_id : Optional[int] = Field(default=None, description = PromptRequestFieldDescriptions.BEFORE_ID.value)
+
+# This is only used in get requests
+class UserPromptQueryParams(BaseModel):
+    agent_id: str = Field(default=None, description="AI Agent ID")
+    limit: Optional[int] = Field(default=10, ge=1, le=50, description="Number of messages to fetch")
+    before_id: Optional[int] = Field(default=None, description="Cursor for infinite scroll")
 
 class SystemPromptRequest(BaseModel):
     agent_id : str = Field(default_factory=None, description = SystemPromptRequestFieldDescription.AGENT_ID_MESSAGE.value)

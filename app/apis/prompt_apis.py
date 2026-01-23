@@ -1,5 +1,5 @@
 # import fast api related libraries and packages
-from fastapi import APIRouter, Depends, BackgroundTasks, Request
+from fastapi import (APIRouter, Depends, BackgroundTasks, Request, Query)
 
 # import request response model
 from app.models.api_request_response_model.request_models import (PromptRequest, SystemPromptRequest, UserPromptRequest)
@@ -82,14 +82,21 @@ def delete_user_prompt(
     info_logger.info(f"delete_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.DELETE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.DELETE.value)
 
-@router.post("/user_prompt/get", response_model=APIResponseMultipleData)
+@router.get("/user_prompt/get", response_model=APIResponseMultipleData)
 def get_user_prompt(
-    request: UserPromptRequest,
-    http_request: Request,
+    agent_id: str = Query(default=None, description="AI Agent ID"),
+    limit: int = Query(default=10, ge=1, le=50),
+    before_id: int | None = Query(None),
+    http_request: Request = None,
     controller: PromptController = Depends(get_prompt_controller)
 ):  
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"get_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.GET_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    request={
+            "agent_id": agent_id,
+            "limit": limit,
+            "before_id": before_id
+        }
     return controller.process_user_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ALL.value)
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name ENDS
