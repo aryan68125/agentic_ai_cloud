@@ -45,12 +45,6 @@ class AgentController:
 
             elif operation_type == DbRecordLevelOperationType.UPDATE.value:
                 info_logger.info(f"AgentController.process_agent | update agent name in the database")
-                if not request.agent_id:
-                    error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
-                    )
                 result = self.ai_agent_repo.update(
                     agent_id=request.agent_id,
                     new_name=request.agent_name

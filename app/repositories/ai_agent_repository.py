@@ -79,6 +79,13 @@ class AIAgentRepository:
 
     def update(self, agent_id: str, new_name: str) -> RepositoryClassResponse:
         try:
+            if not agent_id or agent_id is None or agent_id == "":
+                error_logger.error(f"AIAgentRepository.update | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                        status=False,
+                        status_code = status.HTTP_400_BAD_REQUEST,
+                        message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                    )
             with self.pool.connection() as conn:
                 conn.row_factory = dict_row
                 row = conn.execute("""
@@ -116,6 +123,13 @@ class AIAgentRepository:
 
     def delete(self, agent_id: str) -> RepositoryClassResponse:
         try:
+            if not agent_id or agent_id is None or agent_id == "":
+                error_logger.error(f"AIAgentRepository.delete | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                        status=False,
+                        status_code = status.HTTP_400_BAD_REQUEST,
+                        message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                    )
             with self.pool.connection() as conn:
                 cur = conn.execute(
                     "DELETE FROM ai_agent_table WHERE ai_agent_id = %s",
