@@ -5,6 +5,8 @@ class PromptRequestFieldDescriptions(Enum):
     AI_MODEL = "Enter the ai model you want to use"
     USER_PROMPT_MESSAGE = "Enter your prompt here!"
     USER_PROMPT_ID = "Enter the primay key of the user_promp record you want to update"
+    LIMIT = "This field allows you to set the number of chats you will get per window/api call (batch size per api call)"
+    BEFORE_ID = "This enables you to get older user prompts from the database"
 
 class SystemPromptRequestFieldDescription(Enum):
     SYSTEM_PROMPT_MESSAGE = "System prompt text (can be very long) this will be used to configure LLM"

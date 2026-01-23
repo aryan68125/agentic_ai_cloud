@@ -79,7 +79,7 @@ class PromptController:
 
             elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
                 info_logger.info(f"PromptController.process_user_prompt | get all user_prompts from database for a particular agent_id")
-                result = self.user_prompt_repo.get_all(agent_id=request.agent_id)
+                result = self.user_prompt_repo.get_all(agent_id=request.agent_id , limit=request.limit, before_id=request.before_id)
                 if not result.status:
                     error_logger.error(f"PromptController.process_user_prompt | {result.message}")
                     raise HTTPException(
