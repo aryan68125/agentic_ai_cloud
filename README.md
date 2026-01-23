@@ -29,6 +29,7 @@ HF_API_URL = https://router.huggingface.co/v1/chat/completions
 
 DB_CONNECTION_STRING = postgresql://<user_name>:<password>@<db_ip>:5432/<db_name>
 ```
+the ```.env``` file must be at the root project directory
 
 
 ## Tool Usage
