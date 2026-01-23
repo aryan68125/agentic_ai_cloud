@@ -1,5 +1,36 @@
 # Aryabhatta 
-This is the backend for the platform that is used to create AI agents.
+This is the backend for the platform that is used to create AI agents (Simplified version of Relevance) <br>
+You can also host this platform on your own infrastructure.
+
+## How to run this project? 
+go to this directory
+```bash
+cd /home/aditya/github/agentic_ai_cloud
+```
+type this command to run your uvicorn asgi server
+```bash
+uvicorn app.main:app --reload
+```
+This command will run your back-end server in localhost ip but if you want to run your back-end on another ip then simply use the command below
+```bash
+uvicorn app.main:app --host <yout_laptop's_ip> --port <your_port_number> --reload
+```
+example : 
+```bash
+uvicorn app.main:app --host 192.168.1.204 --port 8000 --reload
+```
+This will allow you to serve your server on a local network over wifi if you want.
+
+## Environment variables
+You will have to set the Environment variables ```.env``` related to hugging face api and postgreSql
+```bash
+HUGGING_FACE_AUTH_TOKEN = hf_mLJifvMK1234567890trAlknGiJDVnVKmL
+HF_API_URL = https://router.huggingface.co/v1/chat/completions
+
+DB_CONNECTION_STRING = postgresql://<user_name>:<password>@<db_ip>:5432/<db_name>
+```
+the ```.env``` file must be at the root project directory
+
 
 ## Tool Usage
 This is the platform where :
