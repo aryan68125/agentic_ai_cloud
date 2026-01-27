@@ -152,7 +152,7 @@ alembic revision --autogenerate -m "create ai_agent_table"
 alembic -c alembic.ini upgrade head
 ```
 
-**NOTE: ** Make sure that your project structure looks something like this 
+**NOTE:** Make sure that your project structure looks something like this 
 ```bash
 .
 ├── alembic
