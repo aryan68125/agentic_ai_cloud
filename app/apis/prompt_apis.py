@@ -3,10 +3,13 @@ from fastapi import (APIRouter, Depends, BackgroundTasks, Request, Query)
 
 # import request response model
 from app.models.api_request_response_model.request_models import (SystemPromptQueryParams, SystemPromptRequest,  UserPromptQueryParams, UserPromptRequest)
-from app.models.api_request_response_model.response_models import (APIResponse, APIResponseMultipleData)
+from app.models.api_request_response_model.response_models import APIResponseMultipleData
 
 # import controllers
 from app.controllers.prompt_controllers import PromptController
+
+# controller dependecies 
+from app.dependencies.controller_dependencies import get_prompt_controller
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -27,8 +30,7 @@ info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
-def get_prompt_controller():
-    return PromptController()
+
 
 """
 Remove this from here 
@@ -63,13 +65,13 @@ def create_user_prompt(
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.INSERT.value)
 
 @router.put("/user_prompt/update", response_model=APIResponseMultipleData)
-def update_system_prompt(
+def update_user_prompt(
     request: UserPromptRequest,
     http_request: Request,
     controller: PromptController = Depends(get_prompt_controller)
 ):
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-    info_logger.info(f"update_system_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.UPDATE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    info_logger.info(f"update_user_prompt | url = {BASE_URL_FAST_API_SERVER}{UserPromptApiUrls.UPDATE_USER_PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.process_user_prompt(request=request, operation_type=DbRecordLevelOperationType.UPDATE.value)
 
 @router.delete("/user_prompt/delete", response_model=APIResponseMultipleData)
@@ -96,6 +98,7 @@ def get_user_prompt(
     )
     request = UserPromptQueryParams(agent_id=agent_id,limit=limit, before_id=before_id)
     return controller.process_user_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ALL.value)
+
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name ENDS
 """
@@ -136,6 +139,8 @@ def delete_system_prompt(
 @router.get("/system_prompt/get", response_model=APIResponseMultipleData)
 def get_system_prompt(
     agent_id: str = Query(default=None, description="AI Agent ID"),
+    limit: int = Query(default=10, ge=1, le=50),
+    before_id: int | None = Query(None),
     http_request: Request = None,
     controller: PromptController = Depends(get_prompt_controller)
 ):  
@@ -143,8 +148,13 @@ def get_system_prompt(
     info_logger.info(
         f"get_system_prompt | url = {full_url} | {LoggerInfoMessages.API_HIT_SUCCESS.value}"
     )
-    request = SystemPromptQueryParams(agent_id=agent_id)
-    return controller.process_system_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
+    if agent_id and not(limit and before_id):
+        # get one record 
+        request = SystemPromptQueryParams(agent_id=agent_id)
+        return controller.process_system_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ONE.value)
+    elif not agent_id and (limit or before_id):
+        request = SystemPromptQueryParams(limit=limit, before_id=before_id)
+        return controller.process_system_prompt(request=request,operation_type=DbRecordLevelOperationType.GET_ALL.value)
 """
 CRUD Apis for system_prompt that is tied to a unique agent ENDS
 """

@@ -1,12 +1,18 @@
 import hashlib
 import time
-from psycopg.rows import dict_row
+
+# db orm related imports
+from sqlalchemy.orm import Session
+from sqlalchemy import (select, update, delete, text, func, and_)
+
+# imports related to database table models
+from app.models.db_table_models.user_prompt_table import UserPrompt
 
 # import repositories
 from app.repositories.ai_agent_repository import AIAgentRepository
 
 # import messages
-from app.utils.success_messages import (PromptApiSuccessMessages, UserPromptApiSuccessMessages)
+from app.utils.success_messages import ( UserPromptApiSuccessMessages)
 from app.utils.error_messages import (AgentApiErrorMessages,SystemPromptApiErrorMessages, UserPromptApiErrorMessages)
 
 # import class response model
@@ -27,24 +33,12 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class UserPromptRepository:
-    def __init__(self, pool):
-        self.pool = pool
-        self._init()
-        debug_logger.debug(f"UserPromptRepository.__init__ | UserPromptRepository initialized | pool = {self.pool}")
-        self.ai_agent_repo = AIAgentRepository(pool=self.pool)
+    def __init__(self, db : Session):
+        self.db = db
+        debug_logger.debug(f"UserPromptRepository.__init__ | AIAgentRepository initialized | database_session = {self.db}")
+        self.ai_agent_repo = AIAgentRepository(db=self.db)
 
-    def _init(self):
-        with self.pool.connection() as conn:
-            conn.execute("""
-            CREATE TABLE IF NOT EXISTS user_prompt_table (
-                id BIGSERIAL PRIMARY KEY,
-                llm_user_prompt TEXT NOT NULL,
-                ai_agent_id TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT now(),
-                updated_at TIMESTAMPTZ DEFAULT now()
-            )
-            """)
-        debug_logger.debug(f"UserPromptRepository.__init__ | create user_prompt_table if not exist in the database")
+    # ---------- CRUD OPERATIONS ----------
 
     def check_if_ai_agent_name_exists(self, agent_id : str) -> RepositoryClassResponse:
         try:
@@ -76,14 +70,14 @@ class UserPromptRepository:
     def insert(self,agent_id : str, user_prompt : str) -> RepositoryClassResponse:
         try:
             if not agent_id or agent_id is None or agent_id == "":
-                debug_logger.debug(f"UserPromptRepository.insert | User prompt is not provided in the request | user_prompt = {agent_id}")
+                error_logger.error(f"UserPromptRepository.insert | User prompt is not provided in the request | user_prompt = {agent_id}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
                 )
             if not user_prompt or user_prompt is None or user_prompt == "":
-                debug_logger.debug(f"UserPromptRepository.insert | User prompt is not provided in the request | user_prompt = {user_prompt}")
+                error_logger.error(f"UserPromptRepository.insert | User prompt is not provided in the request | user_prompt = {user_prompt}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
@@ -91,23 +85,22 @@ class UserPromptRepository:
                 )
             result = self.check_if_ai_agent_name_exists(agent_id)
             if not result.status:
+                error_logger.error(f"UserPromptRepository.insert | result = {result}")
                 return RepositoryClassResponse(
                         status = result.status,
                         status_code = result.status_code,
                         message = result.message
                     )
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute("""
-                    INSERT INTO user_prompt_table (
-                        llm_user_prompt,
-                        ai_agent_id,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (%s, %s, now(), now())
-                    RETURNING id, llm_user_prompt, ai_agent_id, created_at, updated_at
-                """, (user_prompt, agent_id)).fetchone()
+
+            obj = UserPrompt(
+                llm_user_prompt=user_prompt,
+                ai_agent_id=agent_id,
+            )
+            row = obj.to_dict()
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+
             debug_logger.debug(f"UserPromptRepository.insert | insert user_prompt | db_response = {row}")
             return RepositoryClassResponse(
                 status=True,
@@ -125,32 +118,32 @@ class UserPromptRepository:
     def update(self, user_prompt_id: int, user_prompt: str) -> RepositoryClassResponse:
         try:
             if not user_prompt or user_prompt is None or user_prompt == "":
-                debug_logger.debug(f"UserPromptRepository.update | User prompt is not provided in the request | user_prompt = {user_prompt}")
+                error_logger.error(f"UserPromptRepository.update | User prompt is not provided in the request | user_prompt = {user_prompt}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=UserPromptApiErrorMessages.USER_PROMPT_EMPTY.value
                 )
             if not user_prompt_id or user_prompt_id is None:
-                debug_logger.debug("UserPromptRepository.update | User prompt primary key is required to be able to update the user prompt record")
+                error_logger.error("UserPromptRepository.update | User prompt primary key is required to be able to update the user prompt record")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=UserPromptApiErrorMessages.USER_PROMPT_ID_EMPTY.value
                 )
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute("""
-                    UPDATE user_prompt_table
-                    SET
-                        llm_user_prompt = %s,
-                        updated_at = now()
-                    WHERE id = %s
-                    RETURNING id, llm_user_prompt, ai_agent_id, created_at, updated_at
-                """, (user_prompt, user_prompt_id)).fetchone()
+
+            obj = (
+                update(UserPrompt)
+                .where(UserPrompt.id == user_prompt_id)
+                .values(llm_user_prompt=user_prompt)
+                .returning(UserPrompt)
+            )
+            row = self.db.execute(obj).scalar_one_or_none()
+            row = row.to_dict()
+            self.db.commit()
 
             if not row:
-                debug_logger.debug(
+                error_logger.error(
                     f"UserPromptRepository.update | {UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND.value.format(user_prompt_id)}"
                 )
                 return RepositoryClassResponse(
@@ -176,19 +169,20 @@ class UserPromptRepository:
     def delete(self, user_prompt_id: str) -> RepositoryClassResponse:
         try:
             if not user_prompt_id or user_prompt_id is None:
-                debug_logger.debug("UserPromptRepository.delete | User prompt primary key is required to be able to delete the user prompt record")
+                error_logger.error(f"UserPromptRepository.delete | {UserPromptApiErrorMessages.USER_PROMPT_ID_EMPTY.value}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=UserPromptApiErrorMessages.USER_PROMPT_ID_EMPTY.value
                 )
-            with self.pool.connection() as conn:
-                cur = conn.execute(
-                    "DELETE FROM user_prompt_table WHERE id = %s",
-                    (user_prompt_id,)
-                )
-            debug_logger.debug(f"UserPromptRepository.delete | delete user_prompt | db_response = {cur.rowcount > 0}")
-            if cur.rowcount > 0:
+            
+            obj = delete(UserPrompt).where(UserPrompt.id == user_prompt_id)
+            result = self.db.execute(obj)
+            self.db.commit()
+
+            debug_logger.debug(f"UserPromptRepository.delete | delete user_prompt | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
+                debug_logger.debug(f"UserPromptRepository.delete | {UserPromptApiSuccessMessages.USER_PROMPT_DELETED.value}")
                 return RepositoryClassResponse(
                     status = True,
                     status_code = status.HTTP_204_NO_CONTENT,
@@ -196,10 +190,11 @@ class UserPromptRepository:
                     data = {}
                 ) 
             else:
+                error_logger.error(f"UserPromptRepository.delete | {UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value}")
                 return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_404_NOT_FOUND,
-                    message = UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND.value.format(user_prompt_id)
+                    message = UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value
                 ) 
         except Exception as e:
             error_logger.error(f"UserPromptRepository.delete | {str(e)}")
@@ -212,7 +207,7 @@ class UserPromptRepository:
     def get_all(self, agent_id: str = None, limit : int = 10, before_id : int = None) -> RepositoryClassResponse:
         try:
             if (not agent_id or agent_id is None or agent_id == ""):
-                debug_logger.debug(f"UserPromptRepository.get_all | AI agent id is not provided")
+                error_logger.error(f"UserPromptRepository.get_all | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
@@ -220,38 +215,32 @@ class UserPromptRepository:
                 )
             # hard safety cap
             limit = min(10 if limit <=0 else limit, 50)
-            fetch_limit = limit + 1  # 👈 key fix
+            fetch_limit = limit + 1
 
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                # keeps getting (older message)
-                if before_id:
-                    rows = conn.execute(
-                        """
-                        SELECT *
-                        FROM user_prompt_table
-                        WHERE ai_agent_id = %s
-                        AND id < %s
-                        ORDER BY id DESC
-                        LIMIT %s
-                        """,
-                        (agent_id, before_id, fetch_limit)
-                    ).fetchall()
-                else:
-                    # first page (latest messages)
-                    rows = conn.execute(
-                        """
-                        SELECT *
-                        FROM user_prompt_table
-                        WHERE ai_agent_id = %s
-                        ORDER BY id DESC
-                        LIMIT %s
-                        """,
-                        (agent_id, fetch_limit)
-                    ).fetchall()
+            if before_id:
+                obj = (
+                    select(UserPrompt)
+                    .where(
+                        and_(
+                            UserPrompt.ai_agent_id == agent_id,
+                            UserPrompt.id <= before_id
+                        )
+                    )
+                    .order_by(UserPrompt.created_at.desc())
+                    .limit(fetch_limit)
+                )
+            else:
+                obj = (
+                    select(UserPrompt)
+                    .where(UserPrompt.ai_agent_id==agent_id)
+                    .order_by(UserPrompt.created_at.desc())
+                    .limit(fetch_limit)
+                )
+            rows = self.db.execute(obj).scalars().all()
+            rows = [row.to_dict() for row in rows]
 
             if not rows:
-                debug_logger.debug(
+                error_logger.error(
                     f"UserPromptRepository.get_all | {UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)}"
                 )
                 return RepositoryClassResponse(

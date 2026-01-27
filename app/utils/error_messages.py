@@ -18,6 +18,7 @@ class SystemPromptApiErrorMessages(Enum):
 
     # db operation errors
     SYSTEM_PROMPT_NOT_FOUND = "System prompt for AI Agent with the agent_id ({}) is not found in the database"
+    SYSTEM_PROMPT_LIST_EMPTY = "No system prompt found in the database"
 
 class UserPromptApiErrorMessages(Enum):
     # Field errors
@@ -27,6 +28,7 @@ class UserPromptApiErrorMessages(Enum):
     # db error
     USER_PROMPT_NOT_FOUND = "User prompt for AI Agent with the agent_id ({}) is not found in the database"
     USER_PROMPTS_NOT_FOUND = "List of user prompts is empty for agent_id ({})"
+    USER_PROMPT_NOT_FOUND_MESSAGE = "User prompt not found in the database"
 
 class AgentApiErrorMessages(Enum):
     # field errors
@@ -35,6 +37,7 @@ class AgentApiErrorMessages(Enum):
     AI_AGENT_NAME_OR_ID_REQUIRED = "Both AI agent name and AI agent id cannot be empty! atleast one of them is required!"
     PAGE_NUMBER_EMPTY = "Page number cannot be empty! when fecthing multiple records from the database"
     PAGE_SIZE_EMPTY = "Page size cannot be empty when fetching multiple records from the database"
+    AI_AGENT_NAME_AND_AGENT_ID_IS_NOT_REQUIRED = "Ai agent id and Ai agent name is supplied only one is required"
     
 
     UNDEFINED_DB_OPERATION_TYPE = "Wrong operation type! aborting operation"

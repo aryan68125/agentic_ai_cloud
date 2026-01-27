@@ -182,17 +182,14 @@ class SystemPromptRequest(BaseModel):
 # This is only used in get requests
 class SystemPromptQueryParams(BaseModel):
     agent_id: Optional[str] = Field(default=None, description="AI Agent ID")
-    @model_validator(mode="after")
-    def validate_fields(self):
-        if not self.agent_id:
-            error_logger.error(f"SystemPromptQueryParams.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
-            )
-        return self
+    limit:Optional[int] = Field(default=None, description="No records shown in a page")
+    before_id:Optional[int] = Field(default=None,description="next record id")
 
 class AgentRequest(BaseModel):
+    agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
+    agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+
+class AgentQueryParams(BaseModel):
     agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
     agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
     page: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_NUMBER.value)

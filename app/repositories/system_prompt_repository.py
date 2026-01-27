@@ -2,6 +2,13 @@ import hashlib
 import time
 from psycopg.rows import dict_row
 
+# db orm related imports
+from sqlalchemy.orm import Session
+from sqlalchemy import (select, update, delete, text, func)
+
+# imports related to database table models
+from app.models.db_table_models.system_prompt_table import SystemPrompt
+
 # import repositories
 from app.repositories.ai_agent_repository import AIAgentRepository
 
@@ -27,25 +34,10 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class SystemPromptRepository:
-    def __init__(self, pool):
-        self.pool = pool
-        self._init()
-        debug_logger.debug(f"SystemPromptRepository.__init__ | SystemPromptRepository initialized | pool = {self.pool}")
-        self.ai_agent_repo = AIAgentRepository(pool=self.pool)
-
-    def _init(self):
-        with self.pool.connection() as conn:
-            conn.execute("""
-            CREATE TABLE IF NOT EXISTS system_prompt_table (
-                id BIGSERIAL PRIMARY KEY,
-                llm_system_prompt TEXT NOT NULL,
-                ai_agent_id TEXT NOT NULL UNIQUE,
-                ai_model TEXT NOT NULL,
-                created_at TIMESTAMPTZ DEFAULT now(),
-                updated_at TIMESTAMPTZ DEFAULT now()
-            )
-            """)
-        debug_logger.debug(f"SystemPromptRepository.__init__ | create system_prompt_table if not exist in the database")
+    def __init__(self, db : Session):
+        self.db = db
+        debug_logger.debug(f"SystemPromptRepository.__init__ | SystemPromptRepository initialized | pool = {self.db}")
+        self.ai_agent_repo = AIAgentRepository(db=self.db)
 
     def check_if_ai_agent_name_exists(self, agent_id : str) -> RepositoryClassResponse:
         try:
@@ -77,14 +69,14 @@ class SystemPromptRepository:
     def insert(self,agent_id : str, ai_model : str, system_prompt : str) -> RepositoryClassResponse:
         try:
             if not system_prompt or system_prompt is None or system_prompt == "":
-                debug_logger.debug(f"SystemPromptRepository.insert | System prompt is not provided in the request | system_prompt = {system_prompt}")
+                error_logger.error(f"SystemPromptRepository.insert | System prompt is not provided in the request | system_prompt = {system_prompt}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
                 )
             if not ai_model or ai_model is None or ai_model == "":
-                debug_logger.debug(f"SystemPromptRepository.insert | AI model name is not provided in the request | ai_model = {ai_model}")
+                error_logger.error(f"SystemPromptRepository.insert | AI model name is not provided in the request | ai_model = {ai_model}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
@@ -97,19 +89,17 @@ class SystemPromptRepository:
                         status_code = result.status_code,
                         message = result.message
                     )
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute("""
-                    INSERT INTO system_prompt_table (
-                        llm_system_prompt,
-                        ai_agent_id,
-                        ai_model,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (%s, %s, %s,now(), now())
-                    RETURNING id, llm_system_prompt, ai_agent_id, ai_model,created_at, updated_at
-                """, (system_prompt, agent_id, ai_model)).fetchone()
+            
+            obj = SystemPrompt(
+                llm_system_prompt=system_prompt,
+                ai_agent_id=agent_id,
+                ai_model=ai_model
+            )
+            row = obj.to_dict()
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+
             debug_logger.debug(f"SystemPromptRepository.insert | insert system_prompt | db_response = {row}")
             return RepositoryClassResponse(
                 status=True,
@@ -127,39 +117,45 @@ class SystemPromptRepository:
     def update(self, agent_id: str, ai_model : str, system_prompt: str) -> RepositoryClassResponse:
         try:
             if (not system_prompt or system_prompt is None or system_prompt == "") and (not ai_model or ai_model is None or ai_model == ""):
-                debug_logger.debug(f"SystemPromptRepository.update | Both system_prompt and ai_model is not provided in the request body")
+                error_logger.error(f"SystemPromptRepository.update | Both system_prompt and ai_model is not provided in the request body")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_AND_AI_MODEL_EMPTY.value
                 )
             
-            set_clauses = []
-            values = []
-            if (not system_prompt or system_prompt is None or system_prompt == ""):
-                set_clauses.append("ai_model = %s")
-                values.append(ai_model)
-            if (not ai_model or ai_model is None or ai_model == ""):
-                set_clauses.append("llm_system_prompt = %s")
-                values.append(system_prompt)
-            # Always update timestamp
-            set_clauses.append("updated_at = now()")
+            # Fetch existing record
+            stmt = select(SystemPrompt).where(
+                SystemPrompt.ai_agent_id == agent_id
+            )
+            obj = self.db.execute(stmt).scalar_one_or_none()
 
-            values.append(agent_id)
+            if not obj:
+                error_logger.error(
+                    f"SystemPromptRepository.update | system_prompt not found for agent_id={agent_id}"
+                )
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
+                )
+            
 
-            query = f"""
-                UPDATE system_prompt_table
-                SET {', '.join(set_clauses)}
-                WHERE ai_agent_id = %s
-                RETURNING id, ai_model, llm_system_prompt, ai_agent_id, created_at, updated_at
-            """
+        
+             # Apply partial updates
+            if system_prompt and system_prompt.strip():
+                obj.llm_system_prompt = system_prompt
 
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute(query, tuple(values)).fetchone()
+            if ai_model and ai_model.strip():
+                obj.ai_model = ai_model
+
+            # ORM handles updated_at automatically (onupdate=func.now())
+            row = obj.to_dict()
+            self.db.commit()
+            self.db.refresh(obj)
 
             if not row:
-                debug_logger.debug(
+                error_logger.error(
                     f"SystemPromptRepository.update | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)}"
                 )
                 return RepositoryClassResponse(
@@ -184,13 +180,13 @@ class SystemPromptRepository:
         
     def delete(self, agent_id: str) -> RepositoryClassResponse:
         try:
-            with self.pool.connection() as conn:
-                cur = conn.execute(
-                    "DELETE FROM system_prompt_table WHERE ai_agent_id = %s",
-                    (agent_id,)
-                )
-            debug_logger.debug(f"SystemPromptRepository.delete | delete system_prompt | db_response = {cur.rowcount > 0}")
-            if cur.rowcount > 0:
+            obj = delete(SystemPrompt).where(SystemPrompt.ai_agent_id == agent_id)
+            result = self.db.execute(obj)
+            self.db.commit()
+
+            debug_logger.debug(f"SystemPromptRepository.delete | delete system_prompt | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
+                debug_logger.debug(f"SystemPromptRepository.delete | {PromptApiSuccessMessages.SYSTEM_PROMPT_DELETED.value}")
                 return RepositoryClassResponse(
                     status = True,
                     status_code = status.HTTP_204_NO_CONTENT,
@@ -198,6 +194,7 @@ class SystemPromptRepository:
                     data = {}
                 ) 
             else:
+                error_logger.error(f"SystemPromptRepository.delete | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)}")
                 return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_404_NOT_FOUND,
@@ -214,21 +211,19 @@ class SystemPromptRepository:
     def get_one(self, agent_id: str = None) -> RepositoryClassResponse:
         try:
             if (not agent_id or agent_id is None or agent_id == ""):
-                debug_logger.debug(f"SystemPromptRepository.get_one | AI agent id is not provided | agent_id = {agent_id}")
+                error_logger.error(f"SystemPromptRepository.get_one | AI agent id is not provided | agent_id = {agent_id}")
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_400_BAD_REQUEST,
                     message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
                 )
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute(
-                    "SELECT * FROM system_prompt_table WHERE ai_agent_id = %s",
-                    (agent_id,)
-                ).fetchone()
-                debug_logger.debug(f"SystemPromptRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
+            
+            obj = select(SystemPrompt).where(SystemPrompt.ai_agent_id==agent_id)
+            row = self.db.execute(obj).scalar_one_or_none()
+
+            debug_logger.debug(f"SystemPromptRepository.get_one | get_one system prompt for agent_id = ({agent_id}) | system_prompt = {row}")
             if not row:
-                debug_logger.debug(
+                error_logger.error(
                     f"SystemPromptRepository.get_one | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)} "
                 )
                 return RepositoryClassResponse(
@@ -236,6 +231,7 @@ class SystemPromptRepository:
                     status_code = status.HTTP_404_NOT_FOUND,
                     message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_NOT_FOUND.value.format(agent_id)
                 )
+            row = row.to_dict()
             debug_logger.debug(f"SystemPromptRepository.get_one | db_response = {row}")
             return RepositoryClassResponse(
                         status = True,
@@ -245,6 +241,70 @@ class SystemPromptRepository:
                     )
         except Exception as e:
             error_logger.error(f"SystemPromptRepository.get_one | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                ) 
+        
+    def get_all(self, limit : int = 10, before_id : int = None) -> RepositoryClassResponse:
+        try:
+            print(f"limit : {limit}, before_id : {before_id}")
+            # hard safety cap
+            limit = min(10 if limit <=0 else limit, 50)
+            fetch_limit = limit + 1
+
+            if before_id:
+                obj = (
+                    select(SystemPrompt)
+                    .where(SystemPrompt.id<=before_id)
+                    .order_by(SystemPrompt.created_at.desc())
+                    .limit(fetch_limit)
+                )
+            else:
+                obj = (
+                    select(SystemPrompt)
+                    .order_by(SystemPrompt.created_at.desc())
+                    .limit(fetch_limit)
+                )
+            rows = self.db.execute(obj).scalars().all()
+            rows = [row.to_dict() for row in rows]
+
+            if not rows:
+                error_logger.error(
+                    f"SystemPromptRepository.get_all | {SystemPromptApiErrorMessages.SYSTEM_PROMPT_LIST_EMPTY.value}"
+                )
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=SystemPromptApiErrorMessages.SYSTEM_PROMPT_LIST_EMPTY.value,
+                    data={
+                        "items": [],
+                        "next_cursor": None,
+                        "has_more": False
+                    }
+                )
+            debug_logger.debug(f"SystemPromptRepository.get_all | before_id={before_id}, limit={limit} |db_response = {rows}")
+
+            has_more = len(rows) > limit
+
+            # Trim extra row if it exists
+            items = rows[:limit]
+
+            next_cursor = items[-1]["id"] if has_more else None
+
+            return RepositoryClassResponse(
+                        status = True,
+                        status_code = status.HTTP_200_OK,
+                        message = PromptApiSuccessMessages.SYSTEM_PROMPT_FETCHED.value,
+                        data={
+                            "items": rows,
+                            "next_cursor": next_cursor,
+                            "has_more": has_more
+                        }
+                    )
+        except Exception as e:
+            error_logger.error(f"UserPromptRepository.get_all | {str(e)}")
             return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,

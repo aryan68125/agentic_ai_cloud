@@ -1,6 +1,12 @@
 import hashlib
 import time
-from psycopg.rows import dict_row
+
+# db orm related imports
+from sqlalchemy.orm import Session
+from sqlalchemy import (select, update, delete, text, func)
+
+# imports related to database table models
+from app.models.db_table_models.ai_agent_table import AIAgentName
 
 # import messages
 from app.utils.success_messages import AiAgentApiSuccessMessage
@@ -21,23 +27,9 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class AIAgentRepository:
-    def __init__(self, pool):
-        self.pool = pool
-        self._init()
-        debug_logger.debug(f"AIAgentRepository.__init__ | AIAgentRepository initialized | pool = {self.pool}")
-
-    def _init(self):
-        with self.pool.connection() as conn:
-            conn.execute("""
-            CREATE TABLE IF NOT EXISTS ai_agent_table (
-                id BIGSERIAL PRIMARY KEY,
-                ai_agent_name TEXT NOT NULL UNIQUE,
-                ai_agent_id TEXT NOT NULL UNIQUE,
-                created_at TIMESTAMPTZ DEFAULT now(),
-                updated_at TIMESTAMPTZ DEFAULT now()
-            )
-            """)
-        debug_logger.debug(f"AIAgentRepository.__init__ | create ai_agent_table if not exist in the database")
+    def __init__(self, db: Session):
+        self.db = db
+        debug_logger.debug(f"AIAgentRepository.__init__ | AIAgentRepository initialized | database_session = {self.db}")
 
     def _generate_agent_id(self, agent_name: str) -> str:
         raw = f"{agent_name}_{time.time()}"
@@ -50,19 +42,17 @@ class AIAgentRepository:
     def insert(self, agent_name: str) -> RepositoryClassResponse:
         try:
             agent_id = self._generate_agent_id(agent_name)
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute("""
-                    INSERT INTO ai_agent_table (
-                        ai_agent_name,
-                        ai_agent_id,
-                        created_at,
-                        updated_at
-                    )
-                    VALUES (%s, %s, now(), now())
-                    RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
-                """, (agent_name, agent_id)).fetchone()
-            debug_logger.debug(f"AIAgentRepository.insert | insert agent_name | db_response = {row}")
+           
+            obj = AIAgentName(
+                ai_agent_name=agent_name,
+                ai_agent_id=agent_id,
+            )
+            row = obj.to_dict()
+            self.db.add(obj)
+            self.db.commit()
+            self.db.refresh(obj)
+
+            debug_logger.debug(f"AIAgentRepository.insert | {AiAgentApiSuccessMessage.AGENT_NAME_INSERTED.value} | db_result = {row}")
             return RepositoryClassResponse(
                 status = True,
                 status_code = status.HTTP_200_OK,
@@ -86,19 +76,25 @@ class AIAgentRepository:
                         status_code = status.HTTP_400_BAD_REQUEST,
                         message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
                     )
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                row = conn.execute("""
-                    UPDATE ai_agent_table
-                    SET
-                        ai_agent_name = %s,
-                        updated_at = now()
-                    WHERE ai_agent_id = %s
-                    RETURNING id, ai_agent_name, ai_agent_id, created_at, updated_at
-                """, (new_name, agent_id)).fetchone()
+            if not new_name or new_name is None or new_name == "":
+                error_logger.error(f"AIAgentRepository.update | {AgentApiErrorMessages.AI_AGENT_NAME_EMPTY.value}")
+                return RepositoryClassResponse(
+                        status=False,
+                        status_code = status.HTTP_400_BAD_REQUEST,
+                        message=AgentApiErrorMessages.AI_AGENT_NAME_EMPTY.value
+                    )
+            obj = (
+                update(AIAgentName)
+                .where(AIAgentName.ai_agent_id == agent_id)
+                .values(ai_agent_name=new_name)
+                .returning(AIAgentName)
+            )
+            row = self.db.execute(obj).scalar_one_or_none()
+            row = row.to_dict()
+            self.db.commit()
 
             if not row:
-                debug_logger.debug(
+                error_logger.error(
                     f"AIAgentRepository.update | agent not found in database | agent_id = {agent_id}"
                 )
                 return RepositoryClassResponse(
@@ -130,13 +126,13 @@ class AIAgentRepository:
                         status_code = status.HTTP_400_BAD_REQUEST,
                         message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
                     )
-            with self.pool.connection() as conn:
-                cur = conn.execute(
-                    "DELETE FROM ai_agent_table WHERE ai_agent_id = %s",
-                    (agent_id,)
-                )
-            debug_logger.debug(f"AIAgentRepository.delete | delete agent_name | db_response = {cur.rowcount > 0}")
-            if cur.rowcount > 0:
+        
+            obj = delete(AIAgentName).where(AIAgentName.ai_agent_id == agent_id)
+            result = self.db.execute(obj)
+            self.db.commit()
+
+            debug_logger.debug(f"AIAgentRepository.delete | delete agent_name | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
                 return RepositoryClassResponse(
                     status = True,
                     status_code = status.HTTP_204_NO_CONTENT,
@@ -144,6 +140,7 @@ class AIAgentRepository:
                     data = {}
                 ) 
             else:
+                error_logger.error(f"AIAgentRepository.delete | {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value}")
                 return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_404_NOT_FOUND,
@@ -159,30 +156,31 @@ class AIAgentRepository:
 
     def get_one(self, agent_id: str = None, agent_name: str = None) -> RepositoryClassResponse:
         try:
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                if agent_id:
-                    debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_id | agent_id = {agent_id}")
-                    row = conn.execute(
-                        "SELECT * FROM ai_agent_table WHERE ai_agent_id = %s",
-                        (agent_id,)
-                    ).fetchone()
-                else:
-                    debug_logger.debug(f"AIAgentRepository.get_one | get_one agent_name | agent_name = {agent_name}")
-                    row = conn.execute(
-                        "SELECT * FROM ai_agent_table WHERE ai_agent_name = %s",
-                        (agent_name,)
-                    ).fetchone()
+            obj = select(AIAgentName)
+            if agent_id and agent_name:
+                error_logger.error(f"AIAgentRepository.get_one | {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_NAME_AND_AGENT_ID_IS_NOT_REQUIRED.value
+                )
+            if agent_id:
+                obj = obj.where(AIAgentName.ai_agent_id == agent_id)
+            if agent_name:
+                obj = obj.where(AIAgentName.ai_agent_name == agent_name)
+
+            row = self.db.execute(obj).scalar_one_or_none()
             if not row:
-                debug_logger.debug(
-                    f"AIAgentRepository.get_one | agent not found in database | agent_id = {agent_id}"
+                error_logger.error(
+                    f"AIAgentRepository.get_one | {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value} | agent_id = {agent_id}"
                 )
                 return RepositoryClassResponse(
                     status=False,
                     status_code = status.HTTP_404_NOT_FOUND,
                     message=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
                 )
-            debug_logger.debug(f"AIAgentRepository.get_one | db_response = {row}")
+            row = row.to_dict()
+            debug_logger.debug(f"AIAgentRepository.get_one | {AiAgentApiSuccessMessage.AGENT_NAME_FETCHED.value} | db_response = {row}")
             return RepositoryClassResponse(
                         status = True,
                         status_code = status.HTTP_200_OK,
@@ -198,26 +196,21 @@ class AIAgentRepository:
                 ) 
         
     def _count_all(self) -> int:
-        with self.pool.connection() as conn:
-            row = conn.execute(
-                "SELECT COUNT(*) AS count FROM ai_agent_table"
-            ).fetchone()
-        debug_logger.debug(f"AIAgentRepository._count_all | db_response = {row}")
-        return row["count"]
+        obj = select(func.count()).select_from(AIAgentName)
+        return self.db.execute(obj).scalar_one()
 
     def get_all(self, page : int = 1, page_size : int = 10) -> RepositoryClassResponse:
         try:
             offset = (page - 1) * page_size
-            with self.pool.connection() as conn:
-                conn.row_factory = dict_row
-                rows = conn.execute(
-                    """
-                        SELECT *
-                        FROM ai_agent_table
-                        ORDER BY created_at DESC
-                        LIMIT %s OFFSET %s
-                    """, (page_size, offset)
-                ).fetchall()
+
+            obj = (
+                select(AIAgentName)
+                .order_by(AIAgentName.created_at.desc())
+                .offset(offset)
+                .limit(page_size)
+            )
+            rows = self.db.execute(obj).scalars().all()
+            items = [row.to_dict() for row in rows]
             total_records = self._count_all()
             total_pages = (total_records + page_size - 1) // page_size
             debug_logger.debug(
@@ -230,7 +223,7 @@ class AIAgentRepository:
                 status_code=status.HTTP_200_OK,
                 message=AiAgentApiSuccessMessage.AGENT_NAME_FETCHED.value,
                 data={
-                    "items": rows,
+                    "items": items,
                     "page": page,
                     "page_size": page_size,
                     "total_records": total_records,

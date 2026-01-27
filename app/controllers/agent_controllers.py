@@ -1,13 +1,9 @@
-from fastapi import HTTPException, status, BackgroundTasks
-import uuid
+from fastapi import HTTPException, status, BackgroundTasks, Depends
 
-from app.models.api_request_response_model.response_models import (APIResponse,APIResponseMultipleData)
+from app.models.api_request_response_model.response_models import APIResponseMultipleData
 
 # import logging utility
 from app.utils.logger import LoggerFactory
-
-# import database connection manager
-from app.utils.db_conn_manager import PostgresConnectionManager
 
 # import repositories
 from app.repositories.ai_agent_repository import AIAgentRepository
@@ -18,15 +14,17 @@ from app.utils.db_operation_type import DbRecordLevelOperationType
 # import error messages
 from app.utils.error_messages import AgentApiErrorMessages
 
+# db orm related imports
+from sqlalchemy.orm import Session
+
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class AgentController:
-    def __init__(self):
-        db_pool = PostgresConnectionManager.get_pool()
-        self.ai_agent_repo = AIAgentRepository(pool=db_pool)
+    def __init__(self,db: Session):
+        self.ai_agent_repo = AIAgentRepository(db=db)
 
     def process_agent(self, request, operation_type : str) -> APIResponseMultipleData:
         try:
