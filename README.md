@@ -149,7 +149,161 @@ else:
 ```bash
 cd /home/aditya/github/agentic_ai_cloud
 alembic revision --autogenerate -m "create ai_agent_table"
-alembic -c app/alembic.ini upgrade head
+alembic -c alembic.ini upgrade head
+```
+
+**NOTE: ** Make sure that your project structure looks something like this 
+```bash
+.
+├── alembic
+│   ├── env.py
+│   ├── __pycache__
+│   │   └── env.cpython-311.pyc
+│   ├── README
+│   ├── script.py.mako
+│   └── versions
+│       ├── 027e8d073bf8_create_ai_agent_table.py
+│       ├── 4778aedf35a2_create_ai_agent_table.py
+│       ├── 53e83fac2395_create_system_prompt_table.py
+│       ├── 6146d779b733_create_system_prompt_table.py
+│       ├── b20ac25ffcd0_create_system_prompt_table.py
+│       ├── c3c1c2bd75c0_create_system_prompt_table.py
+│       ├── ff1251aeb20c_create_user_prompt_table.py
+│       └── __pycache__
+│           ├── 027e8d073bf8_create_ai_agent_table.cpython-311.pyc
+│           ├── 4778aedf35a2_create_ai_agent_table.cpython-311.pyc
+│           ├── 53e83fac2395_create_system_prompt_table.cpython-311.pyc
+│           ├── 6146d779b733_create_system_prompt_table.cpython-311.pyc
+│           ├── b20ac25ffcd0_create_system_prompt_table.cpython-311.pyc
+│           ├── c3c1c2bd75c0_create_system_prompt_table.cpython-311.pyc
+│           └── ff1251aeb20c_create_user_prompt_table.cpython-311.pyc
+├── alembic.ini
+├── app
+│   ├── apis
+│   │   ├── agent_api.py
+│   │   ├── hugging_face_api.py
+│   │   ├── __init__.py
+│   │   ├── prompt_apis.py
+│   │   └── __pycache__
+│   │       ├── agent_api.cpython-311.pyc
+│   │       ├── hugging_face_api.cpython-311.pyc
+│   │       ├── __init__.cpython-311.pyc
+│   │       └── prompt_apis.cpython-311.pyc
+│   ├── configs
+│   │   ├── config.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       ├── config.cpython-311.pyc
+│   │       └── __init__.cpython-311.pyc
+│   ├── controllers
+│   │   ├── agent_controllers.py
+│   │   ├── hugging_face_ai_model_controllers.py
+│   │   ├── __init__.py
+│   │   ├── prompt_controllers.py
+│   │   └── __pycache__
+│   │       ├── agent_controllers.cpython-311.pyc
+│   │       ├── hugging_face_ai_model_controllers.cpython-311.pyc
+│   │       ├── __init__.cpython-311.pyc
+│   │       └── prompt_controllers.cpython-311.pyc
+│   ├── database
+│   │   ├── base.py
+│   │   ├── db_session.py
+│   │   └── __pycache__
+│   │       ├── base.cpython-311.pyc
+│   │       └── db_session.cpython-311.pyc
+│   ├── dependencies
+│   │   ├── controller_dependencies.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       ├── controller_dependencies.cpython-311.pyc
+│   │       └── __init__.cpython-311.pyc
+│   ├── __init__.py
+│   ├── logs
+│   │   ├── debug
+│   │   │   └── debug.log
+│   │   ├── error
+│   │   │   └── error.log
+│   │   └── info
+│   │       └── info.log
+│   ├── main.py
+│   ├── models
+│   │   ├── api_request_response_model
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   │   ├── request_models.cpython-311.pyc
+│   │   │   │   ├── response_models.cpython-311.pyc
+│   │   │   │   └── services_class_response_models.cpython-311.pyc
+│   │   │   ├── request_models.py
+│   │   │   └── response_models.py
+│   │   ├── class_return_model
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   │   └── services_class_response_models.cpython-311.pyc
+│   │   │   └── services_class_response_models.py
+│   │   ├── db_table_models
+│   │   │   ├── ai_agent_table.py
+│   │   │   ├── __init__.py
+│   │   │   ├── __pycache__
+│   │   │   │   ├── ai_agent_table.cpython-311.pyc
+│   │   │   │   ├── __init__.cpython-311.pyc
+│   │   │   │   ├── system_prompt_table.cpython-311.pyc
+│   │   │   │   └── user_prompt_table.cpython-311.pyc
+│   │   │   ├── system_prompt_table.py
+│   │   │   └── user_prompt_table.py
+│   │   ├── __init__.py
+│   │   └── __pycache__
+│   │       └── __init__.cpython-311.pyc
+│   ├── __pycache__
+│   │   ├── __init__.cpython-311.pyc
+│   │   └── main.cpython-311.pyc
+│   ├── repositories
+│   │   ├── ai_agent_repository.py
+│   │   ├── __init__.py
+│   │   ├── __pycache__
+│   │   │   ├── ai_agent_repository.cpython-311.pyc
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── system_prompt_repository.cpython-311.pyc
+│   │   │   └── user_prompt_repository.cpython-311.pyc
+│   │   ├── system_prompt_repository.py
+│   │   └── user_prompt_repository.py
+│   ├── services
+│   │   ├── process_huggingface_ai_response.py
+│   │   ├── process_prompt.py
+│   │   └── __pycache__
+│   │       ├── process_huggingface_ai_response.cpython-311.pyc
+│   │       └── process_prompt.cpython-311.pyc
+│   └── utils
+│       ├── db_bootstrap.py
+│       ├── db_conn_manager.py
+│       ├── db_operation_type.py
+│       ├── error_messages.py
+│       ├── field_descriptions.py
+│       ├── get_base_url.py
+│       ├── hugging_face_ai_model_enum.py
+│       ├── __init__.py
+│       ├── logger_info_messages.py
+│       ├── logger.py
+│       ├── log_initializer.py
+│       ├── logs_re_namer.py
+│       ├── __pycache__
+│       │   ├── db_bootstrap.cpython-311.pyc
+│       │   ├── db_conn_manager.cpython-311.pyc
+│       │   ├── db_operation_type.cpython-311.pyc
+│       │   ├── error_messages.cpython-311.pyc
+│       │   ├── field_descriptions.cpython-311.pyc
+│       │   ├── get_base_url.cpython-311.pyc
+│       │   ├── hugging_face_ai_model_enum.cpython-311.pyc
+│       │   ├── __init__.cpython-311.pyc
+│       │   ├── logger.cpython-311.pyc
+│       │   ├── logger_info_messages.cpython-311.pyc
+│       │   ├── log_initializer.cpython-311.pyc
+│       │   ├── logs_re_namer.cpython-311.pyc
+│       │   └── success_messages.cpython-311.pyc
+│       └── success_messages.py
+├── README.md
+└── requirements.txt
 ```
 
 
