@@ -170,7 +170,6 @@ class AIAgentRepository:
                 obj = obj.where(AIAgentName.ai_agent_name == agent_name)
 
             row = self.db.execute(obj).scalar_one_or_none()
-            row = row.to_dict()
             if not row:
                 error_logger.error(
                     f"AIAgentRepository.get_one | {AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value} | agent_id = {agent_id}"
@@ -180,6 +179,7 @@ class AIAgentRepository:
                     status_code = status.HTTP_404_NOT_FOUND,
                     message=AgentApiErrorMessages.AGENT_ID_NOT_FOUND.value
                 )
+            row = row.to_dict()
             debug_logger.debug(f"AIAgentRepository.get_one | {AiAgentApiSuccessMessage.AGENT_NAME_FETCHED.value} | db_response = {row}")
             return RepositoryClassResponse(
                         status = True,

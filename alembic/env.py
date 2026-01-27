@@ -11,8 +11,12 @@ from logging.config import fileConfig
 
 from decouple import config as env_config
 
+# import all the sql alchemy table models here so that albemic can track the migrations for each table in db [STARTS]
 from app.database.base import Base
 from app.models.db_table_models.ai_agent_table import AIAgentName
+from app.models.db_table_models.user_prompt_table import UserPrompt
+from app.models.db_table_models.system_prompt_table import SystemPrompt
+# import all the sql alchemy table models here so that albemic can track the migrations for each table in db [ENDS]
 
 from sqlalchemy import create_engine
 

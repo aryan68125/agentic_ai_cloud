@@ -22,6 +22,9 @@ from app.utils.db_operation_type import DbRecordLevelOperationType
 # import database connection manager
 from app.utils.db_conn_manager import PostgresConnectionManager
 
+# db orm related imports
+from sqlalchemy.orm import Session
+
 # import repositories
 from app.repositories.system_prompt_repository import SystemPromptRepository
 from app.repositories.user_prompt_repository import UserPromptRepository
@@ -32,11 +35,11 @@ error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptController:
-    def __init__(self):
+    def __init__(self, db: Session):
         self.process_prompt_service_obj = ProcessPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value)
-        db_pool = PostgresConnectionManager.get_pool()
-        self.user_prompt_repo = UserPromptRepository(pool=db_pool)
-        self.system_prompt_repo = SystemPromptRepository(pool=db_pool)
+
+        self.user_prompt_repo = UserPromptRepository(db=db)
+        self.system_prompt_repo = SystemPromptRepository(db=db)
     
 
     def process_user_prompt(self,request,operation_type : str) -> APIResponseMultipleData:
@@ -170,6 +173,18 @@ class PromptController:
                 info_logger.info(f"PromptController.process_system_prompt | get one system prompt for the agent_id-> ({request.agent_id}) from the database")
                 result = self.system_prompt_repo.get_one(
                     agent_id=request.agent_id
+                )
+                if not result.status:
+                    error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {result.message}")
+                    raise HTTPException(
+                        status_code=result.status_code, 
+                        detail=result.message)
+                debug_logger.debug(f"PromptController.process_system_prompt | result = {result}")
+            elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
+                info_logger.info(f"PromptController.process_system_prompt | get all system prompts from the database")
+                result = self.system_prompt_repo.get_all(
+                    limit=request.limit,
+                    before_id=request.before_id
                 )
                 if not result.status:
                     error_logger.error(f"PromptController.process_system_prompt | operation_type = {operation_type} | error = {result.message}")
