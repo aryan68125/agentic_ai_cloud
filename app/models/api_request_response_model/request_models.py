@@ -195,5 +195,9 @@ class SystemPromptQueryParams(BaseModel):
 class AgentRequest(BaseModel):
     agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
     agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+
+class AgentQueryParams(BaseModel):
+    agent_name : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_NAME.value)
+    agent_id : Optional[str] = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
     page: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_NUMBER.value)
     page_size: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_SIZE.value)
