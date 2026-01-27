@@ -45,21 +45,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         }
     )
 
-# This makes sure that the database exists before any query is executed using the db connection pool
-@app.on_event("startup")
-def startup():
-    # ensure 
-    db_bootstrap = DatabaseBootstrap()
-    db_bootstrap.ensure_database_exists()
-
-    PostgresConnectionManager.get_pool()
-
-# This closes the db connection pool when fast-api server is stopped
-@app.on_event("shutdown")
-def shutdown():
-    pool = PostgresConnectionManager.get_pool()
-    pool.close()
-
 # Test api
 @app.get("/health",status_code = status.HTTP_200_OK)
 def health(request: Request):

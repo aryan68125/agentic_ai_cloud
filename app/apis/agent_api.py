@@ -17,6 +17,9 @@ from app.utils.logger_info_messages import LoggerInfoMessages, AgentApiUrls
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
 
+# controller dependecies 
+from app.dependencies.controller_dependencies import get_agent_controller
+
 # get db operation type
 from app.utils.db_operation_type import DbRecordLevelOperationType
 
@@ -26,9 +29,6 @@ router = APIRouter(tags=["Agent_processing_apis"])
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
-
-def get_agent_controller():
-    return AgentController()
 
 """
 CRUD Apis for Agent that is unique and is tied to the user STARTS
