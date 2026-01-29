@@ -90,8 +90,8 @@ class AIAgentRepository:
                 .returning(AIAgentName)
             )
             row = self.db.execute(obj).scalar_one_or_none()
-            row = row.to_dict()
             self.db.commit()
+            row = row.to_dict()
 
             if not row:
                 error_logger.error(

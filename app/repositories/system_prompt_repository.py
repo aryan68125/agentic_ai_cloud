@@ -150,9 +150,9 @@ class SystemPromptRepository:
                 obj.ai_model = ai_model
 
             # ORM handles updated_at automatically (onupdate=func.now())
-            row = obj.to_dict()
             self.db.commit()
             self.db.refresh(obj)
+            row = obj.to_dict()
 
             if not row:
                 error_logger.error(

@@ -305,7 +305,42 @@ alembic -c alembic.ini upgrade head
 ├── README.md
 └── requirements.txt
 ```
+## The way I designed the project's flow 
+### Repositories 
+```bash
+├── repositories
+│   │   ├── ai_agent_repository.py
+│   │   ├── __init__.py
+│   │   ├── system_prompt_repository.py
+│   │   └── user_prompt_repository.py
+```
+The way I designed my repositories:
+- These repositories will be responsible for carrying out simple CRUD or complex database queries only
+- It return structured result objects
+- It also handles the database level exceptions and then pass those exceptions back to the controller layer.
+- It own exactly one table in the database and does not know about other tables in the database
+- It validate inputs for persistence
 
+### Controllers
+```bash
+│   ├── controllers
+│   │   ├── agent_controllers.py
+│   │   ├── hugging_face_ai_model_controllers.py
+│   │   ├── __init__.py
+│   │   ├── prompt_controllers.py
+```
+The way I designed my controllers : 
+- They do not know SQLAlchemy
+- They do not talk to the database
+- They do not know about hugging face 
+- They are only responsible to orchestrate the services and repositories according to the business logic 
+- They translate the result after processing comming from the services and repositories into HTTP 
+
+I made sure that : 
+- Repositories return RepositoryClassResponse
+- Repositories do not raise HTTPException
+- Repositories do not know about FastAPI
+- Repositories don’t mix multiple tables casually
 
 ## Tool Usage
 This is the platform where :
