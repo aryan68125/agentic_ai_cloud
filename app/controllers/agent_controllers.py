@@ -67,14 +67,6 @@ class AgentController:
            
             elif operation_type == DbRecordLevelOperationType.GET_ALL.value:
                 info_logger.info(f"AgentController.process_agent | get all agent's name from the database")
-                if request.page is None or request.page < 1:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail=AgentApiErrorMessages.PAGE_NUMBER_EMPTY.value) 
-                if request.page_size is None or request.page_size < 1:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST, 
-                        detail=AgentApiErrorMessages.PAGE_SIZE_EMPTY.value) 
                 result = self.ai_agent_repo.get_all(page = request.page,page_size = request.page_size)
                 if not result.status:
                     error_logger.error(f"AgentController.process_agent | {result.message}")

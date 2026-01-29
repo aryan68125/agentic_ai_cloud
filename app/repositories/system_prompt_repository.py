@@ -95,10 +95,10 @@ class SystemPromptRepository:
                 ai_agent_id=agent_id,
                 ai_model=ai_model
             )
-            row = obj.to_dict()
             self.db.add(obj)
             self.db.commit()
             self.db.refresh(obj)
+            row = obj.to_dict()
 
             debug_logger.debug(f"SystemPromptRepository.insert | insert system_prompt | db_response = {row}")
             return RepositoryClassResponse(
@@ -284,7 +284,7 @@ class SystemPromptRepository:
                         "has_more": False
                     }
                 )
-            debug_logger.debug(f"SystemPromptRepository.get_all | before_id={before_id}, limit={limit} |db_response = {rows}")
+            debug_logger.debug(f"SystemPromptRepository.get_all | before_id={before_id}, limit={limit} |db_response = {len(rows)}")
 
             has_more = len(rows) > limit
 

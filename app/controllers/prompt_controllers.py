@@ -13,14 +13,8 @@ from app.configs.config import ProjectConfigurations
 # import logging utility
 from app.utils.logger import LoggerFactory
 
-# import services
-from app.services.process_prompt import ProcessPromptService
-
 # import database operation types
 from app.utils.db_operation_type import DbRecordLevelOperationType
-
-# import database connection manager
-from app.utils.db_conn_manager import PostgresConnectionManager
 
 # db orm related imports
 from sqlalchemy.orm import Session
@@ -36,8 +30,6 @@ debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptController:
     def __init__(self, db: Session):
-        self.process_prompt_service_obj = ProcessPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value)
-
         self.user_prompt_repo = UserPromptRepository(db=db)
         self.system_prompt_repo = SystemPromptRepository(db=db)
     
@@ -104,32 +96,6 @@ class PromptController:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=str(e)
             )
-
-    """
-    This url will send the system prompt, user prompt , ai model name to the hugging face modle api for processing and recieve the output from the llm running on hugging face infrastructure
-    """
-    # async def process_user_prompt(self, request) -> APIResponse:
-    #     try:
-    #         info_logger.info(f"PromptController.process_user_prompt | Started to process user prompt | user_prompt = {request.user_prompt}")
-    #         result = await self.process_prompt_service_obj.process_user_prompt_llm(request=request) 
-    #         if not result.status:
-    #             return APIResponse(
-    #                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #                 message=result.message
-    #             )
-    #         return APIResponse(
-    #             status = status.HTTP_200_OK,
-    #             message = result.message,
-    #             data=result.data
-    #         )
-    #     except HTTPException:
-    #         raise
-    #     except Exception as e:
-    #         error_logger.error(f"PromptController.process_user_prompt | {str(e)}")
-    #         raise HTTPException(
-    #             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    #             detail=str(e)
-    #         )
         
     
     def process_system_prompt(self, request, operation_type : str) -> APIResponseMultipleData:

@@ -44,4 +44,12 @@ class AgentApiErrorMessages(Enum):
 
     # db operation errors
     AGENT_ID_NOT_FOUND = "Agent not found"
+
+class LLmPromptResponseErrorMessage(Enum):
+    LLM_PROMPT_RESPONSE_EMPTY = "LLM prompt respose cannot be empty"
+
+
+class HuggingFaceAIModelAPIErrorMessage(Enum):
+    LLM_PROMPT_HUGGING_FACE_ERROR = "Invalid LLM response: content missing or not a string"
+    HUGGING_FACE_LLM_API_TIMEOUT = "LLM response timed out. Model is slow or overloaded."
     

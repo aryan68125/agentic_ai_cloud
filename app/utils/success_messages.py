@@ -24,6 +24,10 @@ class UserPromptApiSuccessMessages(Enum):
 class HuggingFaceAIModelAPISuccessMessage(Enum):
     FETCH_LIST_OF_AI_MODELS = "List of ai models fetched successfully!"
 
+    # llm process user prompt messages
+    LLM_RESPONSE_INSERT = "LLM response inserted successfully1"
+    LLM_USER_PROMPT_SUCCESS = "LLm processed the user_prompt successfully!"
+
 class AiAgentApiSuccessMessage(Enum):
     AGENT_NAME_INSERTED = "AI Agent name inserted successfully!"
     AGENT_NAME_UPDATED = "AI Agent name updated successfully!"

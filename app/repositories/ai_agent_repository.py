@@ -47,10 +47,10 @@ class AIAgentRepository:
                 ai_agent_name=agent_name,
                 ai_agent_id=agent_id,
             )
-            row = obj.to_dict()
             self.db.add(obj)
             self.db.commit()
             self.db.refresh(obj)
+            row = obj.to_dict()
 
             debug_logger.debug(f"AIAgentRepository.insert | {AiAgentApiSuccessMessage.AGENT_NAME_INSERTED.value} | db_result = {row}")
             return RepositoryClassResponse(
@@ -201,6 +201,20 @@ class AIAgentRepository:
 
     def get_all(self, page : int = 1, page_size : int = 10) -> RepositoryClassResponse:
         try:
+            if page is None or page < 1:
+                error_logger.error(f"AIAgentRepository.get_all | {AgentApiErrorMessages.PAGE_NUMBER_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.PAGE_NUMBER_EMPTY.value
+                )
+            if page_size is None or page_size < 1:
+                error_logger.error(f"AIAgentRepository.get_all | {AgentApiErrorMessages.PAGE_SIZE_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.PAGE_SIZE_EMPTY.value
+                )
             offset = (page - 1) * page_size
 
             obj = (
