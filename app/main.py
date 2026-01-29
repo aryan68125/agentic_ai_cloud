@@ -15,12 +15,6 @@ from app.utils.logger_info_messages import LoggerInfoMessages, PromptApiUrls
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
 
-# database related imports
-from app.utils.db_conn_manager import PostgresConnectionManager
-
-# import database bootstrap
-from app.utils.db_bootstrap import DatabaseBootstrap
-
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()

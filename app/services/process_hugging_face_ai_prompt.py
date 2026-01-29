@@ -63,13 +63,10 @@ class ProcessHuggingFaceAIPromptService:
             """
                         
             # get system_prompt from the database using agen_id
-            system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
-            if not system_prompt_get_result.status:
-                return RepositoryClassResponse(
-                    status = False,
-                    status_code = system_prompt_get_result.status_code,
-                    message = system_prompt_get_result.message
-                ) 
+            with self.db.begin():
+                system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
+                if not system_prompt_get_result.status:
+                    raise TransactionAbort(system_prompt_get_result)
                     
             info_logger.info(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | This class hit was a success! ")
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
@@ -132,7 +129,7 @@ class ProcessHuggingFaceAIPromptService:
                     message=HuggingFaceAIModelAPIErrorMessage.LLM_PROMPT_HUGGING_FACE_ERROR.value
                 )
             
-            async with self.db.begin():
+            with self.db.begin():
                 user_prompt_insert_result = self.user_prompt_repo.insert(
                     agent_id=request.agent_id,
                     user_prompt=request.user_prompt
