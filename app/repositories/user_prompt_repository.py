@@ -96,8 +96,9 @@ class UserPromptRepository:
                 llm_user_prompt=user_prompt,
                 ai_agent_id=agent_id,
             )
+
             self.db.add(obj)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(obj)
             row = obj.to_dict()
 
@@ -139,7 +140,7 @@ class UserPromptRepository:
                 .returning(UserPrompt)
             )
             row = self.db.execute(obj).scalar_one_or_none()
-            self.db.commit()
+            self.db.flush()
             row = row.to_dict()
 
             if not row:
@@ -178,7 +179,7 @@ class UserPromptRepository:
             
             obj = delete(UserPrompt).where(UserPrompt.id == user_prompt_id)
             result = self.db.execute(obj)
-            self.db.commit()
+            self.db.flush()
 
             debug_logger.debug(f"UserPromptRepository.delete | delete user_prompt | db_response = {result.rowcount > 0}")
             if result.rowcount > 0:

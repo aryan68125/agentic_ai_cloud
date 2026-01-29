@@ -32,7 +32,8 @@ class AgentController:
             # Here the logic to save the ai agent name in the database will come
             if operation_type == DbRecordLevelOperationType.INSERT.value:
                 info_logger.info(f"AgentController.process_agent | insert agent name in the database")
-                result = self.ai_agent_repo.insert(request.agent_name)
+                with self.db.begin():
+                    result = self.ai_agent_repo.insert(request.agent_name)
                 if not result.status:
                     error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(
@@ -43,7 +44,8 @@ class AgentController:
 
             elif operation_type == DbRecordLevelOperationType.UPDATE.value:
                 info_logger.info(f"AgentController.process_agent | update agent name in the database")
-                result = self.ai_agent_repo.update(
+                with self.db.begin():
+                    result = self.ai_agent_repo.update(
                     agent_id=request.agent_id,
                     new_name=request.agent_name
                 )
@@ -57,7 +59,8 @@ class AgentController:
                 
             elif operation_type == DbRecordLevelOperationType.DELETE.value:
                 info_logger.info(f"AgentController.process_agent | delete agent name in the database")
-                result = self.ai_agent_repo.delete(request.agent_id)
+                with self.db.begin():
+                    result = self.ai_agent_repo.delete(request.agent_id)
                 if not result.status:
                     error_logger.error(f"AgentController.process_agent | operation_type = {operation_type} | error = {result.message}")
                     raise HTTPException(

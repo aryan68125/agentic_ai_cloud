@@ -48,7 +48,7 @@ class AIAgentRepository:
                 ai_agent_id=agent_id,
             )
             self.db.add(obj)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(obj)
             row = obj.to_dict()
 
@@ -90,7 +90,7 @@ class AIAgentRepository:
                 .returning(AIAgentName)
             )
             row = self.db.execute(obj).scalar_one_or_none()
-            self.db.commit()
+            self.db.flush()
             row = row.to_dict()
 
             if not row:
@@ -129,7 +129,7 @@ class AIAgentRepository:
         
             obj = delete(AIAgentName).where(AIAgentName.ai_agent_id == agent_id)
             result = self.db.execute(obj)
-            self.db.commit()
+            self.db.flush()
 
             debug_logger.debug(f"AIAgentRepository.delete | delete agent_name | db_response = {result.rowcount > 0}")
             if result.rowcount > 0:

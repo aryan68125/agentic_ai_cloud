@@ -52,7 +52,7 @@ class LLmPromptResponseRepository:
                 message=str(e)
             )
 
-    def insert(self,agent_id : str, llm_user_prompt_id : int, llm_prompt_response : str) -> RepositoryClassResponse:
+    def insert(self,agent_id : str, llm_user_prompt_id : int, llm_prompt_response : str, commit : bool = False) -> RepositoryClassResponse:
         try:
             if not agent_id or agent_id is None or agent_id == "":
                 error_logger.error(f"LLmPromptResponseRepository.insert | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
@@ -90,7 +90,7 @@ class LLmPromptResponseRepository:
 
             )
             self.db.add(obj)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(obj)
             row = obj.to_dict()
 
