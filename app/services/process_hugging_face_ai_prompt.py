@@ -1,3 +1,6 @@
+# import time
+import time
+
 # import fast api libraries
 from fastapi import HTTPException, status
 
@@ -41,6 +44,20 @@ class ProcessHuggingFaceAIPromptService:
         self.llm_response_repo = LLmPromptResponseRepository(db=db)
         self.process_response_service = ProcessPromptResponseService()
 
+        # initialze the httpx here before making any call to hugging face
+        self.client = httpx.AsyncClient(
+            timeout=httpx.Timeout(
+                connect=5.0,
+                read=120.0,
+                write=5.0,
+                pool=5.0,
+            ),
+            limits=httpx.Limits(
+                max_connections=50,
+                max_keepalive_connections=20
+            )
+        )
+
     async def process_user_prompt_llm(self,request) -> RepositoryClassResponse:
         try:
             """
@@ -70,13 +87,6 @@ class ProcessHuggingFaceAIPromptService:
                     
             info_logger.info(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | This class hit was a success! ")
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
-
-            timeout = httpx.Timeout(
-                connect=10.0,
-                read=120.0,
-                write=10.0,
-                pool=10.0
-            )
             
             headers = {"Authorization": f"Bearer {self.hugging_face_auth_token}"}
             
@@ -105,12 +115,14 @@ class ProcessHuggingFaceAIPromptService:
 
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | make request to hugging face | HEADERS = {headers} , BODY = {body}")
             # make request to hugging face api_model
-            async with httpx.AsyncClient(timeout=timeout) as client:
-                resp = await client.post(self.HF_API_URL, json=body, headers=headers)
-                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | executing async with httpx.AsyncClient() | hugging_face_response = {resp}")
-                resp.raise_for_status()
-                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | response data from hugging face resp.json() | data = {resp.json()}")
-                data = resp.json()
+            start = time.perf_counter()
+            resp = await self.client.post(self.HF_API_URL, json=body, headers=headers)
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | executing async with httpx.AsyncClient() | hugging_face_response = {resp}")
+            resp.raise_for_status()
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | response data from hugging face resp.json() | data = {resp.json()}")
+            data = resp.json()
+            end = time.perf_counter()
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | time taken to complete the hugging face api call ==> {(end - start) * 1000} milliseconds")
 
             # process response from hugging face ai_model
             result_process_response_service = self.process_response_service.extract_content(data)
