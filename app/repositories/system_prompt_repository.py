@@ -96,7 +96,7 @@ class SystemPromptRepository:
                 ai_model=ai_model
             )
             self.db.add(obj)
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(obj)
             row = obj.to_dict()
 
@@ -150,7 +150,7 @@ class SystemPromptRepository:
                 obj.ai_model = ai_model
 
             # ORM handles updated_at automatically (onupdate=func.now())
-            self.db.commit()
+            self.db.flush()
             self.db.refresh(obj)
             row = obj.to_dict()
 
@@ -182,7 +182,7 @@ class SystemPromptRepository:
         try:
             obj = delete(SystemPrompt).where(SystemPrompt.ai_agent_id == agent_id)
             result = self.db.execute(obj)
-            self.db.commit()
+            self.db.flush()
 
             debug_logger.debug(f"SystemPromptRepository.delete | delete system_prompt | db_response = {result.rowcount > 0}")
             if result.rowcount > 0:

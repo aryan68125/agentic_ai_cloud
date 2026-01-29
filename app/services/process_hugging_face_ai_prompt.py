@@ -12,6 +12,9 @@ from app.repositories.llm_prompt_response_repository import LLmPromptResponseRep
 # import models
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
 
+#import database transaction exception handler
+from app.database.db_transaction_exception_handler import TransactionAbort
+
 # import messages
 from app.utils.success_messages import HuggingFaceAIModelAPISuccessMessage
 from app.utils.error_messages import HuggingFaceAIModelAPIErrorMessage
@@ -58,25 +61,13 @@ class ProcessHuggingFaceAIPromptService:
             STEP 4 :
             - Fourth send all this to hugging face api  
             """
-
-            # insert user_prompt to the database
-            user_prompt_insert_result = self.user_prompt_repo.insert(agent_id = request.agent_id, user_prompt = request.user_prompt)
-            if not user_prompt_insert_result.status:
-                return RepositoryClassResponse(
-                    status = False,
-                    status_code = user_prompt_insert_result.status_code,
-                    message = user_prompt_insert_result.message
-                ) 
                         
             # get system_prompt from the database using agen_id
-            system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
-            if not system_prompt_get_result.status:
-                return RepositoryClassResponse(
-                    status = False,
-                    status_code = user_prompt_insert_result.status_code,
-                    message = user_prompt_insert_result.message
-                ) 
-                      
+            with self.db.begin():
+                system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
+                if not system_prompt_get_result.status:
+                    raise TransactionAbort(system_prompt_get_result)
+                    
             info_logger.info(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | This class hit was a success! ")
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
 
@@ -138,15 +129,21 @@ class ProcessHuggingFaceAIPromptService:
                     message=HuggingFaceAIModelAPIErrorMessage.LLM_PROMPT_HUGGING_FACE_ERROR.value
                 )
             
-            # save the llm resposne to db coming in from hugging face
-            llm_response_repo = self.llm_response_repo.insert(agent_id = request.agent_id, llm_user_prompt_id = user_prompt_insert_result.data.get('id'), llm_prompt_response = content)
+            with self.db.begin():
+                user_prompt_insert_result = self.user_prompt_repo.insert(
+                    agent_id=request.agent_id,
+                    user_prompt=request.user_prompt
+                )
+                if not user_prompt_insert_result.status:
+                    raise TransactionAbort(user_prompt_insert_result)
 
-            if not llm_response_repo.status:
-                return RepositoryClassResponse(
-                    status = False,
-                    status_code = llm_response_repo.status_code,
-                    message = llm_response_repo.message
-                ) 
+                llm_response_repo = self.llm_response_repo.insert(
+                    agent_id=request.agent_id,
+                    llm_user_prompt_id=user_prompt_insert_result.data["id"],
+                    llm_prompt_response=content
+                )
+                if not llm_response_repo.status:
+                    raise TransactionAbort(llm_response_repo)
             
             return RepositoryClassResponse(
                     status = True,
@@ -155,7 +152,13 @@ class ProcessHuggingFaceAIPromptService:
                     data = {
                         "content":content
                     }
-                ) 
+                )
+        except TransactionAbort as e:
+            return RepositoryClassResponse(
+                status=False,
+                status_code=e.response.status_code,
+                message=e.response.message
+            )
         except httpx.ReadTimeout:
             return RepositoryClassResponse(
                 status=False,
