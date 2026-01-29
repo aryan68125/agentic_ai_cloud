@@ -1,0 +1,23 @@
+
+SELECT * FROM public.ai_agent_table
+ORDER BY id ASC 
+SELECT * FROM system_prompt_table ORDER BY id DESC;
+SELECT * FROM user_prompt_table ORDER BY id DESC;
+
+DROP TABLE ai_agent_table
+DROP TABLE system_prompt_table;
+DROP TABLE user_prompt_table;
+DROP TABLE alembic_version
+
+DELETE FROM ai_agent_table WHERE id=13;
+DROP TABLE ai_agent_tab
+
+SELECT * FROM user_prompt_table WHERE ai_agent_id = '1333b64cdc97876c6f34a0fda87bfe5e1315ce46f80aab5fd9cdd9f055ddfe2e'
+ORDER BY id DESC; 
+
+
+
+SELECT COUNT(*) FROM user_prompt_table WHERE ai_agent_id = '1333b64cdc97876c6f34a0fda87bfe5e1315ce46f80aab5fd9cdd9f055ddfe2e'; 
+
+
+TRUNCATE TABLE user_prompt_table;

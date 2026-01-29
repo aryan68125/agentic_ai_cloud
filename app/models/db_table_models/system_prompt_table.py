@@ -5,7 +5,7 @@ from app.database.base import Base
 class SystemPrompt(Base):
     __tablename__ = "system_prompt_table"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     llm_system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
     ai_agent_id: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     ai_model : Mapped[str] = mapped_column(Text, nullable=False)

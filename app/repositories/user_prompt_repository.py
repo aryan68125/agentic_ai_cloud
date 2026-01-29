@@ -96,10 +96,10 @@ class UserPromptRepository:
                 llm_user_prompt=user_prompt,
                 ai_agent_id=agent_id,
             )
-            row = obj.to_dict()
             self.db.add(obj)
             self.db.commit()
             self.db.refresh(obj)
+            row = obj.to_dict()
 
             debug_logger.debug(f"UserPromptRepository.insert | insert user_prompt | db_response = {row}")
             return RepositoryClassResponse(
@@ -279,3 +279,80 @@ class UserPromptRepository:
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                     message = str(e)
                 ) 
+        
+    
+    def get_latest_user_prompt(self, agent_id: str = None) -> RepositoryClassResponse:
+        try:
+            if (not agent_id or agent_id is None or agent_id == ""):
+                error_logger.error(f"UserPromptRepository.get_latest_user_prompt | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+            """
+            Check if the user_prompt has the corresponding llm_response in the llm_response_table using the user_prompt_primary_key if no only then send the response 
+            """
+            # write the logic here ---> PENDING
+            """
+            for now I am just returning the latest user_prompt from the database
+            """
+            obj = select(UserPrompt).where(UserPrompt.ai_agent_id==agent_id).order_by(UserPrompt.created_at.desc())
+            row = self.db.execute(obj).scalars().first()
+
+            if not row:
+                error_logger.error(
+                    f"UserPromptRepository.get_latest_user_prompt | {UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)} "
+                )
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=UserPromptApiErrorMessages.USER_PROMPTS_NOT_FOUND.value.format(agent_id)
+                )
+            
+            row = row.to_dict()
+            debug_logger.debug(f"UserPromptRepository.get_latest_user_prompt | {UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value} | user_prompt = {row}")
+            return RepositoryClassResponse(
+                            status = True,
+                            status_code = status.HTTP_200_OK,
+                            message = UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value,
+                            data=row
+                        )
+        except Exception as e:
+            error_logger.error(f"UserPromptRepository.get_latest_user_prompt | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                ) 
+        
+    def get_one(self, llm_user_prompt_id : int) -> RepositoryClassResponse:
+        try:
+            obj = select(UserPrompt).where(UserPrompt.id==llm_user_prompt_id)
+            row = self.db.execute(obj).scalar_one_or_none()
+
+            if not row:
+                error_logger.error(
+                    f"UserPromptRepository.get_latest_user_prompt | {UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value} "
+                )
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message=UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value
+                )
+            
+            row = row.to_dict()
+            debug_logger.debug(f"UserPromptRepository.get_latest_user_prompt | {UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value} | user_prompt = {row}")
+            return RepositoryClassResponse(
+                            status = True,
+                            status_code = status.HTTP_200_OK,
+                            message = UserPromptApiSuccessMessages.USER_PROMPT_FETCHED.value,
+                            data=row
+                        )
+        except Exception as e:
+            error_logger.error(f"UserPromptRepository.get_one | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                )

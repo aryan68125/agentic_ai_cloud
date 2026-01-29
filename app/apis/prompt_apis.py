@@ -15,7 +15,7 @@ from app.dependencies.controller_dependencies import get_prompt_controller
 from app.utils.logger import LoggerFactory
 
 # import info logger messages
-from app.utils.logger_info_messages import (LoggerInfoMessages, PromptApiUrls, SystemPromptApiUrls, UserPromptApiUrls)
+from app.utils.logger_info_messages import (LoggerInfoMessages, SystemPromptApiUrls, UserPromptApiUrls)
 
 # get base url for the fast-api server
 from app.utils.get_base_url import FastApiServer
@@ -29,21 +29,6 @@ router = APIRouter(tags=["Prompt_processing_apis"])
 info_logger = LoggerFactory.get_info_logger()
 error_logger = LoggerFactory.get_error_logger()
 debug_logger = LoggerFactory.get_debug_logger()
-
-
-
-"""
-Remove this from here 
-"""
-# @router.post("/user_prompt", response_model=APIResponse)
-# async def process_user_prompt_api(
-#     request: PromptRequest,
-#     http_request: Request,
-#     controller: PromptController = Depends(get_prompt_controller)
-# ):
-#     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
-#     info_logger.info(f"process_user_prompt_api | url = {BASE_URL_FAST_API_SERVER}{PromptApiUrls.PROMPT_API_URL.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
-#     return await controller.process_user_prompt(request)
 
 """
 CRUD Apis for user_prompt that is tied to the system_prompt , agent and model name STARTS
