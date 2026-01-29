@@ -341,6 +341,47 @@ I made sure that :
 - Repositories do not raise HTTPException
 - Repositories do not know about FastAPI
 - Repositories don’t mix multiple tables casually
+### services
+```bash
+│   ├── services
+│   │   ├── process_huggingface_ai_response.py
+│   │   ├── process_prompt.py
+```
+I made this service layer to:
+- Orchestrate multiple repositories
+- Call external systems
+- Implement workflows
+- Enforce business sequencing
+- Handle retries/timeouts
+- Return domain-level results
+
+### apis
+```bash
+│   ├── apis
+│   │   ├── agent_api.py
+│   │   ├── hugging_face_api.py
+│   │   ├── __init__.py
+│   │   ├── prompt_apis.py
+```
+What I wanted this layer to do:
+- define HTTP routes
+- bind request/response models
+- do dependency injection
+- log request metadata
+- forward the call to a controller
+
+They do not:
+- implement business rules
+- talk to repositories
+- talk to Hugging Face
+- contain workflow logic
+
+Each API file corresponds to:
+- a domain concept
+- a controller
+- a use-case family
+
+API modules define HTTP contracts and routing. They delegate all behavior to controllers and services and remain free of business logic.
 
 ## Tool Usage
 This is the platform where :
