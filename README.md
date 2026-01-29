@@ -1,6 +1,12 @@
 # Aryabhatta 
-This is the backend for the platform that is used to create AI agents (Simplified version of Relevance) <br>
-You can also host this platform on your own infrastructure.
+This project is a fault-aware AI prompt processing service built with FastAPI.
+It accepts user prompts, applies an agent-specific system prompt, calls a Hugging Face LLM, and atomically stores both the user prompt and AI response only when the LLM call succeeds.
+
+The system is designed to be transaction-safe, network-failure tolerant, and cleanly extensible for production workloads.
+
+At the end what you will see is a basic version of relevance 
+
+I will be adding tools support as well ... 
 
 ## How to run this project? 
 go to this directory
@@ -157,26 +163,20 @@ alembic -c alembic.ini upgrade head
 .
 ├── alembic
 │   ├── env.py
-│   ├── __pycache__
-│   │   └── env.cpython-311.pyc
 │   ├── README
 │   ├── script.py.mako
 │   └── versions
 │       ├── 027e8d073bf8_create_ai_agent_table.py
+│       ├── 20178cf2ef3e_create_user_prompt_table.py
+│       ├── 37463c85173b_create_tables.py
 │       ├── 4778aedf35a2_create_ai_agent_table.py
 │       ├── 53e83fac2395_create_system_prompt_table.py
+│       ├── 5cffdaf15574_create_llm_prompt_response_table.py
 │       ├── 6146d779b733_create_system_prompt_table.py
 │       ├── b20ac25ffcd0_create_system_prompt_table.py
 │       ├── c3c1c2bd75c0_create_system_prompt_table.py
+│       ├── c7af7dbf402a_create_user_prompt_table.py
 │       ├── ff1251aeb20c_create_user_prompt_table.py
-│       └── __pycache__
-│           ├── 027e8d073bf8_create_ai_agent_table.cpython-311.pyc
-│           ├── 4778aedf35a2_create_ai_agent_table.cpython-311.pyc
-│           ├── 53e83fac2395_create_system_prompt_table.cpython-311.pyc
-│           ├── 6146d779b733_create_system_prompt_table.cpython-311.pyc
-│           ├── b20ac25ffcd0_create_system_prompt_table.cpython-311.pyc
-│           ├── c3c1c2bd75c0_create_system_prompt_table.cpython-311.pyc
-│           └── ff1251aeb20c_create_user_prompt_table.cpython-311.pyc
 ├── alembic.ini
 ├── app
 │   ├── apis
@@ -184,39 +184,21 @@ alembic -c alembic.ini upgrade head
 │   │   ├── hugging_face_api.py
 │   │   ├── __init__.py
 │   │   ├── prompt_apis.py
-│   │   └── __pycache__
-│   │       ├── agent_api.cpython-311.pyc
-│   │       ├── hugging_face_api.cpython-311.pyc
-│   │       ├── __init__.cpython-311.pyc
-│   │       └── prompt_apis.cpython-311.pyc
 │   ├── configs
 │   │   ├── config.py
 │   │   ├── __init__.py
-│   │   └── __pycache__
-│   │       ├── config.cpython-311.pyc
-│   │       └── __init__.cpython-311.pyc
 │   ├── controllers
 │   │   ├── agent_controllers.py
 │   │   ├── hugging_face_ai_model_controllers.py
 │   │   ├── __init__.py
 │   │   ├── prompt_controllers.py
-│   │   └── __pycache__
-│   │       ├── agent_controllers.cpython-311.pyc
-│   │       ├── hugging_face_ai_model_controllers.cpython-311.pyc
-│   │       ├── __init__.cpython-311.pyc
-│   │       └── prompt_controllers.cpython-311.pyc
 │   ├── database
 │   │   ├── base.py
 │   │   ├── db_session.py
-│   │   └── __pycache__
-│   │       ├── base.cpython-311.pyc
-│   │       └── db_session.cpython-311.pyc
+│   │   ├── db_transaction_exception_handler.py
 │   ├── dependencies
 │   │   ├── controller_dependencies.py
 │   │   ├── __init__.py
-│   │   └── __pycache__
-│   │       ├── controller_dependencies.cpython-311.pyc
-│   │       └── __init__.cpython-311.pyc
 │   ├── __init__.py
 │   ├── logs
 │   │   ├── debug
@@ -229,54 +211,31 @@ alembic -c alembic.ini upgrade head
 │   ├── models
 │   │   ├── api_request_response_model
 │   │   │   ├── __init__.py
-│   │   │   ├── __pycache__
-│   │   │   │   ├── __init__.cpython-311.pyc
-│   │   │   │   ├── request_models.cpython-311.pyc
-│   │   │   │   ├── response_models.cpython-311.pyc
-│   │   │   │   └── services_class_response_models.cpython-311.pyc
 │   │   │   ├── request_models.py
 │   │   │   └── response_models.py
+│   │   ├── class_request_model
+│   │   │   ├── class_request_model.py
+│   │   │   └── __init__.py
 │   │   ├── class_return_model
 │   │   │   ├── __init__.py
-│   │   │   ├── __pycache__
-│   │   │   │   ├── __init__.cpython-311.pyc
-│   │   │   │   └── services_class_response_models.cpython-311.pyc
 │   │   │   └── services_class_response_models.py
 │   │   ├── db_table_models
 │   │   │   ├── ai_agent_table.py
 │   │   │   ├── __init__.py
-│   │   │   ├── __pycache__
-│   │   │   │   ├── ai_agent_table.cpython-311.pyc
-│   │   │   │   ├── __init__.cpython-311.pyc
-│   │   │   │   ├── system_prompt_table.cpython-311.pyc
-│   │   │   │   └── user_prompt_table.cpython-311.pyc
+│   │   │   ├── llm_prompt_response_table.py
 │   │   │   ├── system_prompt_table.py
 │   │   │   └── user_prompt_table.py
 │   │   ├── __init__.py
-│   │   └── __pycache__
-│   │       └── __init__.cpython-311.pyc
-│   ├── __pycache__
-│   │   ├── __init__.cpython-311.pyc
-│   │   └── main.cpython-311.pyc
 │   ├── repositories
 │   │   ├── ai_agent_repository.py
 │   │   ├── __init__.py
-│   │   ├── __pycache__
-│   │   │   ├── ai_agent_repository.cpython-311.pyc
-│   │   │   ├── __init__.cpython-311.pyc
-│   │   │   ├── system_prompt_repository.cpython-311.pyc
-│   │   │   └── user_prompt_repository.cpython-311.pyc
+│   │   ├── llm_prompt_response_repository.py
 │   │   ├── system_prompt_repository.py
 │   │   └── user_prompt_repository.py
 │   ├── services
+│   │   ├── process_hugging_face_ai_prompt.py
 │   │   ├── process_huggingface_ai_response.py
-│   │   ├── process_prompt.py
-│   │   └── __pycache__
-│   │       ├── process_huggingface_ai_response.cpython-311.pyc
-│   │       └── process_prompt.cpython-311.pyc
 │   └── utils
-│       ├── db_bootstrap.py
-│       ├── db_conn_manager.py
 │       ├── db_operation_type.py
 │       ├── error_messages.py
 │       ├── field_descriptions.py
@@ -287,25 +246,20 @@ alembic -c alembic.ini upgrade head
 │       ├── logger.py
 │       ├── log_initializer.py
 │       ├── logs_re_namer.py
-│       ├── __pycache__
-│       │   ├── db_bootstrap.cpython-311.pyc
-│       │   ├── db_conn_manager.cpython-311.pyc
-│       │   ├── db_operation_type.cpython-311.pyc
-│       │   ├── error_messages.cpython-311.pyc
-│       │   ├── field_descriptions.cpython-311.pyc
-│       │   ├── get_base_url.cpython-311.pyc
-│       │   ├── hugging_face_ai_model_enum.cpython-311.pyc
-│       │   ├── __init__.cpython-311.pyc
-│       │   ├── logger.cpython-311.pyc
-│       │   ├── logger_info_messages.cpython-311.pyc
-│       │   ├── log_initializer.cpython-311.pyc
-│       │   ├── logs_re_namer.cpython-311.pyc
-│       │   └── success_messages.cpython-311.pyc
+│       ├── saved_sql_query
 │       └── success_messages.py
 ├── README.md
 └── requirements.txt
 ```
 ## The way I designed the project's flow 
+### My design philosophy
+This project prioritizes correctness over cleverness.
+
+I intentionally avoided premature optimizations (Redis, queues) and focused on:
+- clear flow
+- strong invariants
+- observable behavior (logs + timings)
+
 ### Repositories 
 ```bash
 ├── repositories
@@ -341,6 +295,7 @@ I made sure that :
 - Repositories do not raise HTTPException
 - Repositories do not know about FastAPI
 - Repositories don’t mix multiple tables casually
+
 ### services
 ```bash
 │   ├── services
@@ -382,6 +337,66 @@ Each API file corresponds to:
 - a use-case family
 
 API modules define HTTP contracts and routing. They delegate all behavior to controllers and services and remain free of business logic.
+
+### database 
+```bash
+│   ├── database
+│   │   ├── base.py
+│   │   ├── db_session.py
+│   │   ├── db_transaction_exception_handler.py
+```
+In this project I intentionally keep database access simple, explicit, and predictable.
+
+Rather than hiding database behavior behind abstractions, I chose the design that makes transaction boundaries and failure behavior obvious to anyone reading the code.
+
+#### **Single source of database access**
+The project exposes one canonical way to access the database.
+- A single SQLAlchemy engine
+- A single session factory
+- A single dependency (get_db) used everywhere
+
+This ensures:
+- consistent connection pooling
+- predictable session lifecycle
+- no accidental multiple engines or sessions
+
+All database access flows through one controlled entry point to avoid hidden state and connection leaks.
+
+Transactions are not started implicitly inside repositories.
+
+Instead:
+- transactions are started at the service or controller level
+- repositories assume a valid session already exists
+Rule of thumb is 
+- Repositories describe what to write.
+- Services decide when it is safe to commit.
+
+Why this matters:
+- external calls (like Hugging Face) are never executed inside DB transactions
+- slow or failing network calls cannot lock database resources
+- rollback behavior is deterministic
+
+Failure-driven rollback using exceptions
+- carries a structured domain response
+- automatically triggers a rollback when raised inside a transaction block
+- avoids mixing HTTP concerns into database logic
+
+## Project's working
+### How this project works?
+- User sends a prompt to the API
+- System fetches the agent’s system prompt
+- Prompt is sent to Hugging Face LLM
+- Response is validated
+- Only after success, both:
+    - user prompt
+    - LLM response are saved inside a single DB transaction
+- If anything fails → automatic rollback
+### What I prevented?
+- No partial writes if LLM fails
+- No DB locks during slow network calls
+- No inconsistent prompt–response pairs
+- Clear failure boundaries
+- Production-safe transaction handling
 
 ## Tool Usage
 This is the platform where :
