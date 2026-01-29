@@ -397,56 +397,44 @@ Failure-driven rollback using exceptions
 - No inconsistent prompt–response pairs
 - Clear failure boundaries
 - Production-safe transaction handling
+### Hugging face LLM context management mechanism
+I went with **Sliding Window Context**
 
-## Tool Usage
-This is the platform where :
-- User will set the system prompt.
-- User will select the tools that the LLM should be able to use.
-- User will test out his/her agents
+from fast-api side send:
+- system prompt (agent definition)
+- last N turns (bounded)
+- current user message
 
-Relevance like flow but more simpler
+Technical advantages
+- Predictable latency
+- Predictable cost
+    - Tokens per request are bounded
+- Easy to reason about
+    - Behavior depends on recent intent, not ancient history
+    - Debugging is straightforward
+- Works perfectly with tools
+    - Most tool calls depend on:
+        - current task
+        - last result
+        - recent constraints
 
-## Reasons for not using Langchain 
-Loss of Control
-- LangChain:
-    - hides agent loops
-    - auto-retries silently
-    - mutates prompts internally
-    - makes debugging painful
-- I care about:
-    - restart safety
-    - determinism
-    - exactly-once execution
-    - auditability
-    - control of what is going on and how it should be done
+Think in agent lifecycles, not chats.
 
-LangChain violates all of these by default.
+Your agents are:
+- HR agent
+- Finance agent
+- Data ingestion agent
+- Support agent
 
-Tool Execution is Opaque
-- LangChain:
-    - executes tools internally
-    - retries tools without telling you
-    - no guaranteed idempotency
-- My requirements 
-    - LLM should only decide, backend should execute
+These agents:
+- perform tasks
+- execute tools
+- respond to short workflows
+- They do not need long-term emotional memory.
 
-Hugging Face Support Is Second-Class
-- LangChain works best with:
-    - OpenAI / Anthropic
-- For Hugging Face:
-    - wrappers are brittle
-    - streaming is inconsistent
-    - function-calling is emulated anyway
+They need:
+- clarity
+- correctness
+- speed
 
-I will still need custom glue code.
-
-Performance & Scaling
-- LangChain:
-    - adds latency
-    - adds memory overhead
-    - difficult to batch
-    - difficult to stream cleanly
-- Your custom loop:
-    - zero abstraction tax
-    - clean async
-    - HF-friendly
+Sliding window delivers that.
