@@ -4,6 +4,9 @@ import time
 # import fast api libraries
 from fastapi import HTTPException, status
 
+# import asynchronous i/o
+import asyncio
+
 # import library required for making request to hugging face
 import httpx
 
@@ -58,27 +61,54 @@ class ProcessHuggingFaceAIPromptService:
             )
         )
 
+    async def _call_huggingface_with_retry(self, body: dict, headers: dict):
+        max_attempts = 3
+        base_delay = 0.5  # seconds
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                start = time.perf_counter()
+
+                resp = await self.client.post(
+                    self.HF_API_URL,
+                    json=body,
+                    headers=headers
+                )
+
+                duration_ms = (time.perf_counter() - start) * 1000
+                debug_logger.debug(
+                    f"ProcessHuggingFaceAIPromptService._call_huggingface_with_retry | HuggingFace call attempt={attempt} | status={resp.status_code} , time={duration_ms:.2f}ms"
+                )
+
+                # If the status returned by the hugging face api is of status 500 series then retry
+                if resp.status_code >= 500:
+                    raise httpx.HTTPStatusError(
+                        "5xx from Hugging Face",
+                        request=resp.request,
+                        response=resp
+                    )
+
+                # if the return status from the hugging face api is of status 400 series then do not retry
+                resp.raise_for_status()
+                return resp.json()
+
+            except (httpx.TimeoutException, httpx.TransportError, httpx.HTTPStatusError) as e:
+                if attempt == max_attempts:
+                    error_logger.error(
+                        f"ProcessHuggingFaceAIPromptService._call_huggingface_with_retry | HuggingFace failed after {attempt} attempts | {e}"
+                    )
+                    raise
+
+                delay = base_delay * (2 ** (attempt - 1))
+                warning_msg = (
+                    f"ProcessHuggingFaceAIPromptService._call_huggingface_with_retry | HuggingFace call failed (attempt {attempt}/{max_attempts}) | retrying in {delay:.2f}s | error={type(e).__name__}"
+                )
+                error_logger.warning(warning_msg)
+
+                await asyncio.sleep(delay)
+
     async def process_user_prompt_llm(self,request) -> RepositoryClassResponse:
-        try:
-            """
-            ai_model
-            system_prompt
-            agent_id use this get the rest
-            user_prompt
-            """
-            """
-            how to process the user prompt here 
-            STEP 1 :
-            - First use agent_id to insert the user_prompt in the user_prompt table
-            STEP 2:
-            - Then get the system prompt from the database using agent_id
-            STEP 3 : 
-            - Make an API call to hugging face send system_prompt and user_prompt (do this only when llm_response_table is empty for the current agent_id)
-            - Third get all the user_prompts along with their llm_response from the datbase using agent_id
-            STEP 4 :
-            - Fourth send all this to hugging face api  
-            """
-                        
+        try:                        
             # get system_prompt from the database using agen_id
             with self.db.begin():
                 system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
@@ -114,15 +144,9 @@ class ProcessHuggingFaceAIPromptService:
             }
 
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | make request to hugging face | HEADERS = {headers} , BODY = {body}")
-            # make request to hugging face api_model
-            start = time.perf_counter()
-            resp = await self.client.post(self.HF_API_URL, json=body, headers=headers)
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | executing async with httpx.AsyncClient() | hugging_face_response = {resp}")
-            resp.raise_for_status()
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | response data from hugging face resp.json() | data = {resp.json()}")
-            data = resp.json()
-            end = time.perf_counter()
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | time taken to complete the hugging face api call ==> {(end - start) * 1000} milliseconds")
+
+            # making hugging face api call 
+            data = await self._call_huggingface_with_retry(body, headers)
 
             # process response from hugging face ai_model
             result_process_response_service = self.process_response_service.extract_content(data)
