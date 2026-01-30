@@ -47,7 +47,7 @@ class AgentApiErrorMessages(Enum):
 
 class LLmPromptResponseErrorMessage(Enum):
     LLM_PROMPT_RESPONSE_EMPTY = "LLM prompt respose cannot be empty"
-
+    LLM_RESPONSE_NOT_FOUND = "No LLM response found in the database"
 
 class HuggingFaceAIModelAPIErrorMessage(Enum):
     LLM_PROMPT_HUGGING_FACE_ERROR = "Invalid LLM response: content missing or not a string"

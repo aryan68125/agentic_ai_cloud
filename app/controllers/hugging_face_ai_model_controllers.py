@@ -58,7 +58,7 @@ class HuggingFaceAIModelController:
             result = await self.process_prompt_service_obj.process_user_prompt_llm(request=request) 
             if not result.status:
                 return APIResponse(
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    status=result.status_code,
                     message=result.message
                 )
             return APIResponse(
@@ -75,3 +75,23 @@ class HuggingFaceAIModelController:
                 detail=str(e)
             )
         
+    def reset_huggingface_model_context(self,request) -> APIResponse:
+        try:
+            info_logger.info(f"HuggingFaceAIModelController.reset_huggingface_model_context | Reset ai agent context | agent_id = {request.agent_id}")
+            result = self.process_prompt_service_obj.reset_agent(request=request)
+            if not result.status:
+                return APIResponse(
+                    status=result.status_code,
+                    message=result.message
+                )
+            return APIResponse(
+                status = status.HTTP_200_OK,
+                message = result.message,
+                data=result.data
+            )
+        except Exception as e:
+            error_logger.error(f"HuggingFaceAIModelController.reset_huggingface_model_context | {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )

@@ -23,14 +23,13 @@ from app.database.db_transaction_exception_handler import TransactionAbort
 
 # import messages
 from app.utils.success_messages import HuggingFaceAIModelAPISuccessMessage
-from app.utils.error_messages import HuggingFaceAIModelAPIErrorMessage
+from app.utils.error_messages import (HuggingFaceAIModelAPIErrorMessage, AgentApiErrorMessages)
 
 # import helper sub services
 from app.services.process_huggingface_ai_response import ProcessPromptResponseService
 
 # import logging utility
 from app.utils.logger import LoggerFactory
-from app.utils.success_messages import PromptApiSuccessMessages
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -205,4 +204,52 @@ class ProcessHuggingFaceAIPromptService:
             error_logger.exception(
                 f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {e}"
             )
-            raise
+            return RepositoryClassResponse(
+                status=False,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=str(e)
+            )
+    
+    """
+    This service is used to reset the agent 
+    - Deletes all the user_prompts from the database
+    - Deletes all the llm responses from the database
+    - Let the system prompt remain in the database it does not deletes it
+    """
+    def reset_agent(self, request):
+        try:
+            if not request.agent_id or request.agent_id is None or request.agent_id == "":
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+            with self.db.begin():
+                delete_all_user_prompt_result = self.user_prompt_repo.delete_all(request.agent_id)
+                delete_all_llm_response_result = self.llm_response_repo.delete_all(request.agent_id)
+            if not delete_all_user_prompt_result.status:
+                raise TransactionAbort(delete_all_user_prompt_result)
+            if not delete_all_llm_response_result.status:
+                raise TransactionAbort(delete_all_llm_response_result)
+            
+            return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = HuggingFaceAIModelAPISuccessMessage.LLM_CONTEXT_RESET_SUCCESS.value,
+                    data = {}
+                )
+        except TransactionAbort as e:
+            return RepositoryClassResponse(
+                status=False,
+                status_code=e.response.status_code,
+                message=e.response.message
+            )
+        except Exception as e:
+            error_logger.exception(
+                f"ProcessHuggingFaceAIPromptService.reset_agent | {e}"
+            )
+            return RepositoryClassResponse(
+                status=False,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=str(e)
+            )

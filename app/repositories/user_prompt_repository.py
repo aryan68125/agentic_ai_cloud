@@ -204,6 +204,44 @@ class UserPromptRepository:
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
                     message = str(e)
             )
+    
+    def delete_all(self, agent_id: str) -> RepositoryClassResponse:
+        try:
+            if not agent_id or agent_id is None:
+                error_logger.error(f"UserPromptRepository.delete_all | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+            
+            obj = delete(UserPrompt).where(UserPrompt.ai_agent_id == agent_id)
+            result = self.db.execute(obj)
+            self.db.flush()
+
+            debug_logger.debug(f"UserPromptRepository.delete_all | delete_all user_prompt | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
+                debug_logger.debug(f"UserPromptRepository.delete_all | {UserPromptApiSuccessMessages.USER_PROMPT_DELETED.value}")
+                return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = UserPromptApiSuccessMessages.USER_PROMPT_DELETED.value,
+                    data = {}
+                ) 
+            else:
+                error_logger.error(f"UserPromptRepository.delete_all | {UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value}")
+                return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message = UserPromptApiErrorMessages.USER_PROMPT_NOT_FOUND_MESSAGE.value
+                ) 
+        except Exception as e:
+            error_logger.error(f"UserPromptRepository.delete_all | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+            )
 
     def get_all(self, agent_id: str = None, limit : int = 10, before_id : int = None) -> RepositoryClassResponse:
         try:

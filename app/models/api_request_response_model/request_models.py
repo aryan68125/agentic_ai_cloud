@@ -66,8 +66,6 @@ class AgentQueryParams(BaseModel):
     page_size: Optional[int] = Field(default_factory=None, description = AgentRequestFieldDescription.PAGE_SIZE.value)
 
 class HuggingFacePromptRequest(BaseModel):
-    # ai_model : str = Field(default="meta-llama/Llama-3.1-8B-Instruct",description=PromptRequestFieldDescriptions.AI_MODEL.value)
-    # system_prompt : str = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
     agent_id : str = Field(default_factory=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
     user_prompt : str = Field(default=None, description = PromptRequestFieldDescriptions.USER_PROMPT_MESSAGE.value)
 
@@ -79,16 +77,22 @@ class HuggingFacePromptRequest(BaseModel):
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
             )
-        # if not self.system_prompt:
-        #     error_logger.error(f"PromptRequest.validate_fields | error = {PromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value}")
-        #     raise HTTPException(
-        #         status_code=status.HTTP_400_BAD_REQUEST,
-        #         detail=SystemPromptApiErrorMessages.SYSTEM_PROMPT_EMPTY.value
-        #     )
         if not self.user_prompt:
             error_logger.error(f"HuggingFacePromptRequest.validate_fields | error = {PromptApiErrorMessages.USER_PROMPT_EMPTY.value}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=PromptApiErrorMessages.USER_PROMPT_EMPTY.value
+            )
+        return self
+    
+class ResetHuggingFaceAIModelContextRequest(BaseModel):
+    agent_id : str = Field(default="",description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"HuggingFacePromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
             )
         return self
