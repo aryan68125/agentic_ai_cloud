@@ -216,7 +216,7 @@ class ProcessHuggingFaceAIPromptService:
     - Deletes all the llm responses from the database
     - Let the system prompt remain in the database it does not deletes it
     """
-    def reset_agent(self, request):
+    def reset_agent(self, request) -> RepositoryClassResponse:
         try:
             if not request.agent_id or request.agent_id is None or request.agent_id == "":
                 return RepositoryClassResponse(
@@ -253,3 +253,13 @@ class ProcessHuggingFaceAIPromptService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e)
             )
+        
+    """
+    This method maintains the sliding context window for the hugging face LLM model 
+    - It sends the last 10 user_prompts along with its corresponding llm responses in the context window 
+    - The new user_prompt if added the oldest prompt will be removed
+    - It sends system prompt
+    """
+    def llm_sliding_context_window(self) -> RepositoryClassResponse:
+        pass
+

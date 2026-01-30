@@ -438,3 +438,38 @@ They need:
 - speed
 
 Sliding window delivers that.
+
+### Tool orchestration 
+For LLm to be able to use the tools for agentic work I chose MCP server 
+```bash
+Application
+ ├─ Agent config (DB)
+ ├─ system_prompt (DB)
+ ├─ model selector
+ ├─ MCP Client
+ │    └─ MCP Server
+ │         ├─ search tool
+ │         ├─ email tool
+ │         ├─ db tool
+ │         └─ filesystem tool
+ └─ Model (Claude / Llama / etc...)
+
+```
+What is MCP? 
+
+MCP is a Model Context Protocol. MCP standardizes how an LLM runtime talks to external tools + data sources.
+
+MCP defines:
+- how tools are exposed
+- how context is injected
+- how models request actions
+- how responses are structured
+
+MCP server fits this project's use case and what I am trying to do
+- per-agent system prompts
+- per-agent tool allow/deny
+- per-agent model selection
+- strong control (what model can/can’t do)
+- persistence (DB)
+- HF compatibility
+- future multi-model support
