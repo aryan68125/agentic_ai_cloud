@@ -1,8 +1,8 @@
 # import fast api related libraries and packages
-from fastapi import APIRouter, Depends, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, BackgroundTasks, Request, Body
 
 # import request response model
-from app.models.api_request_response_model.request_models import HuggingFacePromptRequest
+from app.models.api_request_response_model.request_models import (HuggingFacePromptRequest, ResetHuggingFaceAIModelContextRequest)
 from app.models.api_request_response_model.response_models import APIResponse
 
 # import controllers
@@ -45,3 +45,13 @@ async def process_user_prompt_hugging_face(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"process_user_prompt_api | url = {BASE_URL_FAST_API_SERVER}{HuggingFaceAPIUrls.HUGGING_FACE_PROCESS_PROMPT.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return await controller.process_hugging_face_prompt_request(request)
+
+@router.delete("/hugging_face/reset_ai_agent_context", response_model=APIResponse)
+def reset_ai_agent_context(
+    request: ResetHuggingFaceAIModelContextRequest,
+    http_request: Request,
+    controller: HuggingFaceAIModelController = Depends(get_hugging_face_ai_model_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"process_user_prompt_hugging_face | url = {BASE_URL_FAST_API_SERVER}{HuggingFaceAPIUrls.HUGGINGFACE_AI_MODEL_RESET_CONTEXT.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
+    return controller.reset_huggingface_model_context(request)

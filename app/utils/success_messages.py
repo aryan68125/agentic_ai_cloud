@@ -27,6 +27,8 @@ class HuggingFaceAIModelAPISuccessMessage(Enum):
     # llm process user prompt messages
     LLM_RESPONSE_INSERT = "LLM response inserted successfully1"
     LLM_USER_PROMPT_SUCCESS = "LLm processed the user_prompt successfully!"
+    LLM_RESPONSE_DELETE = "All LLMs responses deleted successfully!"
+    LLM_CONTEXT_RESET_SUCCESS = "LLM context window reset successfull"
 
 class AiAgentApiSuccessMessage(Enum):
     AGENT_NAME_INSERTED = "AI Agent name inserted successfully!"

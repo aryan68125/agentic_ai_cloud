@@ -24,6 +24,7 @@ class SystemPromptApiUrls(Enum):
 class HuggingFaceAPIUrls(Enum):
     HUGGING_FACE_GET_AI_MODELS = "/process/hugging_face/get_models"
     HUGGING_FACE_PROCESS_PROMPT = "process/hugging_face/user_prompt"
+    HUGGINGFACE_AI_MODEL_RESET_CONTEXT = "/process/hugging_face/reset_ai_agent_context"
 
 class AgentApiUrls(Enum):
     CREATE_AGENT_API_URL = "/process/agent/create"
