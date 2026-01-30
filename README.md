@@ -397,6 +397,7 @@ Failure-driven rollback using exceptions
 - No inconsistent prompt–response pairs
 - Clear failure boundaries
 - Production-safe transaction handling
+
 ### Hugging face LLM context management mechanism
 I went with **Sliding Window Context**
 
@@ -438,6 +439,96 @@ They need:
 - speed
 
 Sliding window delivers that.
+
+## >>>> Implementation logic for sliding window documentation <<<<<<<<< (TEMPORARY)
+**Fetch conversation history**
+```python
+def get_conversation_turns(self, agent_id: str, limit: int):
+    """
+    Returns ordered list of:
+    [
+      { role: "user", content: ... },
+      { role: "assistant", content: ... }
+    ]
+    """
+```
+This should:
+- join user_prompt ↔ llm_prompt_response
+- order by created_at ASC
+- return paired turns
+
+NOTE:
+- Do not rely on “latest only”.
+- Context needs ordering, not recency hacks.
+
+**Token budgeting (this is critical)**
+Define hard limits:
+```python
+MAX_CONTEXT_TOKENS = 3000
+RESERVED_FOR_RESPONSE = 800
+```
+Available for history:
+```python
+HISTORY_BUDGET = MAX_CONTEXT_TOKENS - RESERVED_FOR_RESPONSE
+```
+
+**Sliding logic (real sliding window)**
+```python
+messages = [
+  {"role": "system", "content": system_prompt}
+]
+
+token_count = count_tokens(system_prompt)
+
+for turn in reversed(conversation_turns):
+    turn_tokens = count_tokens(turn["content"])
+
+    if token_count + turn_tokens > HISTORY_BUDGET:
+        break
+
+    messages.insert(1, turn)  # insert after system
+    token_count += turn_tokens
+```
+
+**Where this plugs into YOUR code**
+Replace this in ProcessHuggingFaceAIPromptService:
+```python
+body = {
+  "model": ...,
+  "messages": [
+    {"role": "system", ...},
+    {"role": "user", ...}
+  ]
+}
+```
+With:
+```python
+messages = ContextBuilder.build(
+    agent_id=request.agent_id,
+    system_prompt=system_prompt,
+    new_user_prompt=request.user_prompt
+)
+
+body = {
+    "model": model,
+    "messages": messages
+}
+```
+**Improvements to plan for LATER (not now)**
+Phase 2 improvements
+
+- Conversation summary table
+    - Periodically compress old context
+    - Store a rolling “memory blob”
+- Tool call separation
+    - tool messages ≠ chat messages
+- Context policy per agent
+    - strict / loose / stateless
+- Token usage accounting
+    - per agent
+    - per request
+- Async background summarization
+    - off the request path
 
 ### Tool orchestration 
 For LLm to be able to use the tools for agentic work I chose MCP server 
