@@ -9,6 +9,7 @@ debug_logger = LoggerFactory.get_debug_logger()
 class ContextBuilderService:
     @staticmethod
     def build(
+        model_name : str,
         system_prompt: str,
         conversation_turns: list[dict],
         new_user_prompt: str,
@@ -20,11 +21,11 @@ class ContextBuilderService:
         history_budget = max_tokens - reserved_for_response
 
         messages = [{"role": "system", "content": system_prompt}]
-        token_count = token_counter(system_prompt)
+        token_count = token_counter(text=system_prompt,model_name=model_name)
 
         # iterate from most recent backwards
         for turn in reversed(conversation_turns):
-            turn_tokens = token_counter(turn["content"])
+            turn_tokens = token_counter(text=turn["content"],model_name=model_name)
             if token_count + turn_tokens > history_budget:
                 break
             messages.insert(1, turn)

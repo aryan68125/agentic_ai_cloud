@@ -9,6 +9,21 @@ At the end what you will see is a basic version of relevance
 I will be adding tools support as well ... 
 
 ## How to run this project? 
+### Pre-requisites : 
+- You should already have the hugging face auth token if you don't have it then you can go to this 
+- ![generate_access_token](docs_images/generate_access_token.png)
+- From the list of options select Access token option to generate the access token fo your application
+- After generating access token you will see something like this 
+- ![access_token_page](docs_images/access_token_page.png)
+- After that create a .env file in the root project directory ```.env```
+- Add the token like this 
+```bash
+HUGGING_FACE_AUTH_TOKEN = your_hf_auth_token
+HF_API_URL = https://router.huggingface.co/v1/chat/completions
+
+DB_CONNECTION_STRING = postgresql+psycopg://user_name:password@localhost:5432/db_name
+```
+### After setting up the project's env file 
 go to this directory
 ```bash
 cd /home/aditya/github/agentic_ai_cloud
@@ -515,16 +530,111 @@ We explicitly acknowledge the following limitations:
 
 These are design trade-offs, not oversights.
 
-### Future Improvements (Planned, Not Premature)
-This design is intentionally extensible. Planned upgrades include:
-#### Accurate Token Counting
-Replace the naive counter with:
-- Hugging Face tokenizer (model-specific)
-- or tiktoken for OpenAI-compatible models
+### Improvement Token Counting Strategy (v2)
+Using **Hugging Face tokenizer (model-specific)**
 
 This will allow:
 - Precise budgeting
 - Model-aware limits
+
+#### Issues I faced when implementing Hugging Face tokenizer
+What is actually failing (root cause) : 
+```python
+AutoTokenizer.from_pretrained(
+    model_name,
+    use_fast=True
+)
+```
+```python
+model_name = "meta-llama/Llama-3.1-8B-Instruct"
+```
+Why this fails? 
+
+```meta-llama/Llama-3.1-8B-Instruct``` is a gated Hugging Face model.
+
+That means:
+- I must explicitly accept Meta’s license
+- I must authenticate when downloading anything related to it
+    - config.json
+    - tokenizer
+    - vocab
+    - merges
+
+My HF inference API call may still work (because I passed a Bearer token),
+but AutoTokenizer.from_pretrained() is a separate HF Hub call.
+
+Tokenizer loading does not automatically reuse my inference token.
+
+#### Solution
+**Authenticate Hugging Face ONCE at system level** <br>
+Run this on the server / dev machine: <br>
+```bash
+huggingface-cli login
+```
+```bash
+(venv) 🐍 base  aditya@aditya-IdeaPad-5-15ITL05  ~/github/agentic_ai_cloud   optimization/sliding_context_window_management ±  huggingface-cli login
+
+⚠️  Warning: 'huggingface-cli login' is deprecated. Use 'hf auth login' instead.
+
+    _|    _|  _|    _|    _|_|_|    _|_|_|  _|_|_|  _|      _|    _|_|_|      _|_|_|_|    _|_|      _|_|_|  _|_|_|_|
+    _|    _|  _|    _|  _|        _|          _|    _|_|    _|  _|            _|        _|    _|  _|        _|
+    _|_|_|_|  _|    _|  _|  _|_|  _|  _|_|    _|    _|  _|  _|  _|  _|_|      _|_|_|    _|_|_|_|  _|        _|_|_|
+    _|    _|  _|    _|  _|    _|  _|    _|    _|    _|    _|_|  _|    _|      _|        _|    _|  _|        _|
+    _|    _|    _|_|      _|_|_|    _|_|_|  _|_|_|  _|      _|    _|_|_|      _|        _|    _|    _|_|_|  _|_|_|_|
+
+    To log in, `huggingface_hub` requires a token generated from https://huggingface.co/settings/tokens .
+Enter your token (input will not be visible): 
+Add token as git credential? (Y/n) y
+Token is valid (permission: fineGrained).
+The token `fast-api` has been saved to /home/aditya/.cache/huggingface/stored_tokens
+Cannot authenticate through git-credential as no helper is defined on your machine.
+You might have to re-authenticate when pushing to the Hugging Face Hub.
+Run the following command in your terminal in case you want to set the 'store' credential helper as default.
+
+git config --global credential.helper store
+
+Read https://git-scm.com/book/en/v2/Git-Tools-Credential-Storage for more details.
+Token has not been saved to git credential helper.
+Your token has been saved to /home/aditya/.cache/huggingface/token
+Login successful.
+The current active token is: `fast-api`
+```
+You may encounter this git related error when setting up this project in your local machine. Run the command below
+```bash
+(venv) 🐍 base  aditya@aditya-IdeaPad-5-15ITL05  ~/github/agentic_ai_cloud   optimization/sliding_context_window_management ±  git config --global credential.helper store
+```
+Try again with this command 
+```bash
+(venv) 🐍 base  aditya@aditya-IdeaPad-5-15ITL05  ~/github/agentic_ai_cloud   optimization/sliding_context_window_management ±  huggingface-cli login
+```
+The above command stores the auth_token for the hugging face api in this location you can use the command below to verify if the token is stored successfully or not
+```bash
+cat ~/.cache/huggingface/token
+
+hf_KiMIsnUpKaUDZvtD1234567890@#ELsmib%                                                                               
+```
+Now all of these should work automatically:
+- AutoTokenizer.from_pretrained(...)
+- AutoConfig.from_pretrained(...)
+- Gated repos
+- Private models
+
+This is what every serious HF deployment does.
+
+Now that I am logged in using hugging face cli 
+- I accepted the terms and conditions for accessing this model repository
+    - Every company has its own terms and conditions that you will have to agree on 
+- After agreeing to the terms and conditions I have to reuest access
+![requesting_access_to_llm_model_hf](docs_images/requesting_access_to_llm_model_hf.png)
+- After the request is granted you will see something like this 
+![repo_reuest_granted](docs_images/repo_reuest_granted.png)
+- After this hugging face tokenizer can be used for counting tokens accurately without any errors
+
+
+
+## <<<<<<<<<<<<<<<TEMPORARY STARTS>>>>>>>>>>>>>>>
+### Future Improvements (Planned, Not Premature)
+This design is intentionally extensible. Planned upgrades include:
 
 #### Structured Long-Term Memory
 Introduce a separate agent memory store for:
@@ -547,6 +657,8 @@ Instead of pure recency:
 - Per-message token usage logs
 - Context diffs between requests
 - Debug flags to inspect dropped messages
+
+## <<<<<<<<<<<<<<<TEMPORARY ENDS>>>>>>>>>>>>>>>
 
 ### Tool orchestration 
 For LLm to be able to use the tools for agentic work I chose MCP server 
