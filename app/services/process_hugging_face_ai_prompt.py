@@ -159,6 +159,7 @@ class ProcessHuggingFaceAIPromptService:
                     raise TransactionAbort(conversation_result)
             # 2. Build context window
             messages = ContextBuilderService.build(
+                model_name=system_prompt_get_result.data["ai_model"],
                 system_prompt=system_prompt_get_result.data["llm_system_prompt"],
                 conversation_turns=conversation_result.data,
                 new_user_prompt=request.user_prompt,
