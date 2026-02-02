@@ -381,8 +381,8 @@ Failure-driven rollback using exceptions
 - automatically triggers a rollback when raised inside a transaction block
 - avoids mixing HTTP concerns into database logic
 
-## Project's working
-### How this project works?
+# Project's working
+## How this project works?
 - User sends a prompt to the API
 - System fetches the agent’s system prompt
 - Prompt is sent to Hugging Face LLM
@@ -391,144 +391,162 @@ Failure-driven rollback using exceptions
     - user prompt
     - LLM response are saved inside a single DB transaction
 - If anything fails → automatic rollback
-### What I prevented?
+## What I prevented?
 - No partial writes if LLM fails
 - No DB locks during slow network calls
 - No inconsistent prompt–response pairs
 - Clear failure boundaries
 - Production-safe transaction handling
 
-### Hugging face LLM context management mechanism
-I went with **Sliding Window Context**
+## Hugging face LLM context management mechanism
+### Problem I am trying to solve
+Large Language Models (LLMs) accessed via the Hugging Face Inference API are stateless by default.
+Each request is processed independently, meaning the model does not “remember” previous interactions unless conversation history is explicitly sent with every request.
 
-from fast-api side send:
-- system prompt (agent definition)
-- last N turns (bounded)
-- current user message
+For an internal, agent-based platform where:
+- multiple employees build their own AI agents,
+- agents are expected to hold conversational continuity,
+- performance and simplicity are critical,
 
-Technical advantages
-- Predictable latency
-- Predictable cost
-    - Tokens per request are bounded
-- Easy to reason about
-    - Behavior depends on recent intent, not ancient history
-    - Debugging is straightforward
-- Works perfectly with tools
-    - Most tool calls depend on:
-        - current task
-        - last result
-        - recent constraints
+I needed a reliable, predictable, and controllable way to maintain context without introducing unnecessary complexity or latency.
 
-Think in agent lifecycles, not chats.
+### I went with **Sliding Window Context**
+I implemented server-side sliding window context management, where:
+- All user prompts and assistant responses are persisted in a database.
+- For each new user request, a bounded subset of recent conversation turns is reconstructed and sent to the LLM.
+- Older context is automatically dropped when token limits are reached.
 
-Your agents are:
-- HR agent
-- Finance agent
-- Data ingestion agent
-- Support agent
+This approach ensures:
+- Deterministic behavior
+- Full control over what the model sees
+- Compatibility with any Hugging Face chat-capable model
 
-These agents:
-- perform tasks
-- execute tools
-- respond to short workflows
-- They do not need long-term emotional memory.
-
-They need:
-- clarity
-- correctness
-- speed
-
-Sliding window delivers that.
-
-## >>>> Implementation logic for sliding window documentation <<<<<<<<< (TEMPORARY)
-**Fetch conversation history**
-```python
-def get_conversation_turns(self, agent_id: str, limit: int):
-    """
-    Returns ordered list of:
-    [
-      { role: "user", content: ... },
-      { role: "assistant", content: ... }
-    ]
-    """
+### Why This Approach?
+#### Why NOT rely on model-side memory?
+- Hugging Face API does not provide persistent conversational memory
+- Model state cannot be trusted across requests
+- Scaling agents would require session pinning (bad for performance)
+#### Why NOT store the entire conversation every time?
+- Token limits would be exceeded quickly
+- Cost and latency increase linearly with conversation length
+- Older messages often lose relevance
+#### Why Sliding Window?
+- Sliding window context is:
+- Simple to reason about
+- Predictable under load
+- Easy to debug
+- Model-agnostic
+- Safe for internal enterprise use
+#### High level LLM context management system architecture
+```bash
+User Request
+   ↓
+Fetch System Prompt
+   ↓
+Fetch Conversation History
+   ↓
+Context Builder (token-bounded)
+   ↓
+Hugging Face LLM
+   ↓
+Persist Response
 ```
-This should:
-- join user_prompt ↔ llm_prompt_response
-- order by created_at ASC
-- return paired turns
+### Context Window Construction Logic
+The context is built using three components:
+#### System Prompt (Always Included)
+The system prompt defines:
+- Agent behavior
+- Safety constraints
+- Output format expectations
 
-NOTE:
-- Do not rely on “latest only”.
-- Context needs ordering, not recency hacks.
+This is always injected as the first message.
 
-**Token budgeting (this is critical)**
-Define hard limits:
+#### Conversation History (Sliding Window)
+Conversation turns are stored as:
+- user messages
+- assistant messages
+
+The builder:
+- Iterates from most recent → oldest
+- Adds messages until the token budget is exhausted
+- Stops cleanly when the budget is reached
+
+Older messages are intentionally dropped, not truncated.
+
+#### New User Prompt
+The current user input is always appended last, ensuring:
+- The model responds to the latest intent
+- Context does not overshadow the new request
+
+#### Token budget strategy
+| Purpose                     | Tokens |
+| --------------------------- | ------ |
+| Total allowed               | 3000   |
+| Reserved for model response | 800    |
+| Available for history       | 2200   |
+
+This prevents:
+- Model cut-offs
+- Partial responses
+- Unpredictable truncation by the provider
+
+### Current Token Counting Strategy (v1)
+At present, token usage is estimated using a naive word-based counter:
 ```python
-MAX_CONTEXT_TOKENS = 3000
-RESERVED_FOR_RESPONSE = 800
+len(text.split())
 ```
-Available for history:
-```python
-HISTORY_BUDGET = MAX_CONTEXT_TOKENS - RESERVED_FOR_RESPONSE
-```
+#### Why this is acceptable (for now):
+- Fast
+- Zero dependencies
+- Good enough for early-stage internal tooling
+- Keeps the architecture flexible
 
-**Sliding logic (real sliding window)**
-```python
-messages = [
-  {"role": "system", "content": system_prompt}
-]
+#### Known Limitations (Intentional)
+We explicitly acknowledge the following limitations:
+- No long-term memory
+    - Facts like names or roles are not permanently remembered
+    - Once context slides out, the model forgets
+- Naive token estimation
+    - Actual tokenizer behavior varies by model
+    - This may slightly over/under-estimate capacity
+- No semantic relevance scoring
+    - Messages are included purely by recency
+    - Not by importance or topic relevance
 
-token_count = count_tokens(system_prompt)
+These are design trade-offs, not oversights.
 
-for turn in reversed(conversation_turns):
-    turn_tokens = count_tokens(turn["content"])
+### Future Improvements (Planned, Not Premature)
+This design is intentionally extensible. Planned upgrades include:
+#### Accurate Token Counting
+Replace the naive counter with:
+- Hugging Face tokenizer (model-specific)
+- or tiktoken for OpenAI-compatible models
 
-    if token_count + turn_tokens > HISTORY_BUDGET:
-        break
+This will allow:
+- Precise budgeting
+- Model-aware limits
 
-    messages.insert(1, turn)  # insert after system
-    token_count += turn_tokens
-```
+#### Structured Long-Term Memory
+Introduce a separate agent memory store for:
+- Facts (“Aditya is a Python developer”)
+- Preferences
+- Roles
 
-**Where this plugs into YOUR code**
-Replace this in ProcessHuggingFaceAIPromptService:
-```python
-body = {
-  "model": ...,
-  "messages": [
-    {"role": "system", ...},
-    {"role": "user", ...}
-  ]
-}
-```
-With:
-```python
-messages = ContextBuilder.build(
-    agent_id=request.agent_id,
-    system_prompt=system_prompt,
-    new_user_prompt=request.user_prompt
-)
+This memory will be:
+- Explicitly injected
+- Curated
+- Not dependent on conversation recency
 
-body = {
-    "model": model,
-    "messages": messages
-}
-```
-**Improvements to plan for LATER (not now)**
-Phase 2 improvements
+#### Relevance-Based Context Selection
+Instead of pure recency:
+- Score messages by semantic similarity
+- Include fewer but more relevant turns
+- Reduce noise in long conversations
 
-- Conversation summary table
-    - Periodically compress old context
-    - Store a rolling “memory blob”
-- Tool call separation
-    - tool messages ≠ chat messages
-- Context policy per agent
-    - strict / loose / stateless
-- Token usage accounting
-    - per agent
-    - per request
-- Async background summarization
-    - off the request path
+#### Observability Enhancements
+- Per-message token usage logs
+- Context diffs between requests
+- Debug flags to inspect dropped messages
 
 ### Tool orchestration 
 For LLm to be able to use the tools for agentic work I chose MCP server 
