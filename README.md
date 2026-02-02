@@ -9,6 +9,21 @@ At the end what you will see is a basic version of relevance
 I will be adding tools support as well ... 
 
 ## How to run this project? 
+### Pre-requisites : 
+- You should already have the hugging face auth token if you don't have it then you can go to this 
+- ![generate_access_token](docs_images/generate_access_token.png)
+- From the list of options select Access token option to generate the access token fo your application
+- After generating access token you will see something like this 
+- ![access_token_page](docs_images/access_token_page.png)
+- After that create a .env file in the root project directory ```.env```
+- Add the token like this 
+```bash
+HUGGING_FACE_AUTH_TOKEN = your_hf_auth_token
+HF_API_URL = https://router.huggingface.co/v1/chat/completions
+
+DB_CONNECTION_STRING = postgresql+psycopg://user_name:password@localhost:5432/db_name
+```
+### After setting up the project's env file 
 go to this directory
 ```bash
 cd /home/aditya/github/agentic_ai_cloud
