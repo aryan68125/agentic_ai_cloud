@@ -30,6 +30,9 @@ class HuggingFaceAIModelAPISuccessMessage(Enum):
     LLM_RESPONSE_DELETE = "All LLMs responses deleted successfully!"
     LLM_CONTEXT_RESET_SUCCESS = "LLM context window reset successfull"
 
+    # llm context management messages
+    LLM_CONTEXT_FETCHED = "LLM context fetched successfully!"
+
 class AiAgentApiSuccessMessage(Enum):
     AGENT_NAME_INSERTED = "AI Agent name inserted successfully!"
     AGENT_NAME_UPDATED = "AI Agent name updated successfully!"

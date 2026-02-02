@@ -23,13 +23,18 @@ from app.database.db_transaction_exception_handler import TransactionAbort
 
 # import messages
 from app.utils.success_messages import HuggingFaceAIModelAPISuccessMessage
-from app.utils.error_messages import (HuggingFaceAIModelAPIErrorMessage, AgentApiErrorMessages)
+from app.utils.error_messages import (HuggingFaceAIModelAPIErrorMessage, AgentApiErrorMessages,SystemPromptApiErrorMessages)
 
 # import helper sub services
 from app.services.process_huggingface_ai_response import ProcessPromptResponseService
 
 # import logging utility
 from app.utils.logger import LoggerFactory
+
+# import other services on which this service depends on 
+from app.services.llm_context_builder import ContextBuilderService
+from app.services.token_counter import TokenCounter
+
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -134,12 +139,37 @@ class ProcessHuggingFaceAIPromptService:
             #     ]
             # }
 
+            # [OLD WAY OF SENDING BODY TO THE HF LLM VIA HF API]
+            # body = {
+            #     "model": system_prompt_get_result.data.get("ai_model"),
+            #     "messages": [
+            #         {"role": "system", "content": system_prompt_get_result.data.get("llm_system_prompt")},
+            #         {"role": "user", "content": request.user_prompt}
+            #     ]
+            # }
+
+            # [NEW WAY OF SENDING BODY TO HF LLM MAINTAINING LLM CONTEXT]
+            # BUILD LLM CONTEXT HERE
+            # 1. Fetch conversation history
+            with self.db.begin():
+                conversation_result = self.llm_response_repo.get_conversation_turns(
+                    agent_id=request.agent_id
+                )
+                if not conversation_result.status:
+                    raise TransactionAbort(conversation_result)
+            # 2. Build context window
+            messages = ContextBuilderService.build(
+                system_prompt=system_prompt_get_result.data["llm_system_prompt"],
+                conversation_turns=conversation_result.data,
+                new_user_prompt=request.user_prompt,
+                token_counter=TokenCounter.count,  # or tiktoken wrapper
+                max_tokens=3000,
+                reserved_for_response=800
+            )
+            # 3. Create the new body for HF LLM api
             body = {
-                "model": system_prompt_get_result.data.get("ai_model"),
-                "messages": [
-                    {"role": "system", "content": system_prompt_get_result.data.get("llm_system_prompt")},
-                    {"role": "user", "content": request.user_prompt}
-                ]
+                "model": system_prompt_get_result.data["ai_model"],
+                "messages": messages
             }
 
             debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | make request to hugging face | HEADERS = {headers} , BODY = {body}")
@@ -216,7 +246,7 @@ class ProcessHuggingFaceAIPromptService:
     - Deletes all the llm responses from the database
     - Let the system prompt remain in the database it does not deletes it
     """
-    def reset_agent(self, request):
+    def reset_agent(self, request) -> RepositoryClassResponse:
         try:
             if not request.agent_id or request.agent_id is None or request.agent_id == "":
                 return RepositoryClassResponse(
@@ -253,3 +283,4 @@ class ProcessHuggingFaceAIPromptService:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e)
             )
+

@@ -4,13 +4,14 @@ from sqlalchemy import (select, update, delete, text, func)
 
 # imports related to database table models
 from app.models.db_table_models.llm_prompt_response_table import LLMPromptResponseTable
+from app.models.db_table_models.user_prompt_table import UserPrompt
 
 # import repositories
 from app.repositories.user_prompt_repository import UserPromptRepository
 
 # import messages
 from app.utils.success_messages import HuggingFaceAIModelAPISuccessMessage
-from app.utils.error_messages import (AgentApiErrorMessages, UserPromptApiErrorMessages, LLmPromptResponseErrorMessage)
+from app.utils.error_messages import (AgentApiErrorMessages, UserPromptApiErrorMessages, LLmPromptResponseErrorMessage, HuggingFaceAIModelAPIErrorMessage)
 
 # import class response model
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
@@ -137,6 +138,54 @@ class LLmPromptResponseRepository:
                 ) 
         except Exception as e:
             error_logger.error(f"LLmPromptResponseRepository.delete_all | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+            )
+        
+    def get_conversation_turns(self, agent_id: str = None, limit: int = None) -> RepositoryClassResponse:
+        try:
+            if not agent_id or agent_id is None:
+                error_logger.error(f"LLmPromptResponseRepository.get_conversation_turns | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+            
+            obj = (
+                select(
+                    UserPrompt.llm_user_prompt,
+                    LLMPromptResponseTable.llm_prompt_response,
+                    UserPrompt.created_at
+                )
+                .join(
+                    LLMPromptResponseTable,
+                    UserPrompt.id == LLMPromptResponseTable.llm_user_prompt_id
+                )
+                .where(UserPrompt.ai_agent_id == agent_id)
+                .order_by(UserPrompt.created_at.asc())
+            )
+
+            if limit:
+                obj = obj.limit(limit)
+
+            rows = self.db.execute(obj).all()
+            turns = []
+            for user_prompt, llm_response, _ in rows:
+                turns.append({"role": "user", "content": user_prompt})
+                turns.append({"role": "assistant", "content": llm_response})
+                
+            debug_logger.debug(f"LLmPromptResponseRepository.get_conversation_turns | {HuggingFaceAIModelAPISuccessMessage.LLM_CONTEXT_FETCHED.value}")
+            return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = HuggingFaceAIModelAPISuccessMessage.LLM_CONTEXT_FETCHED.value,
+                    data = turns
+                ) 
+        except Exception as e:
+            error_logger.error(f"LLmPromptResponseRepository.get_conversation_turns | {str(e)}")
             return RepositoryClassResponse(
                     status = False,
                     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,

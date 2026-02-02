@@ -52,4 +52,5 @@ class LLmPromptResponseErrorMessage(Enum):
 class HuggingFaceAIModelAPIErrorMessage(Enum):
     LLM_PROMPT_HUGGING_FACE_ERROR = "Invalid LLM response: content missing or not a string"
     HUGGING_FACE_LLM_API_TIMEOUT = "LLM response timed out. Model is slow or overloaded."
+    LLM_CONTEXT_LIMIT_EMPTY = "Limit for the llm context cannot be less than or equal to zero or None"
     
