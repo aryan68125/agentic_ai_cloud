@@ -632,14 +632,9 @@ Now that I am logged in using hugging face cli
 
 
 
-
-
+## <<<<<<<<<<<<<<<TEMPORARY STARTS>>>>>>>>>>>>>>>
 ### Future Improvements (Planned, Not Premature)
 This design is intentionally extensible. Planned upgrades include:
-#### Accurate Token Counting
-Replace the naive counter with:
-- Hugging Face tokenizer (model-specific)
-- or tiktoken for OpenAI-compatible models
 
 #### Structured Long-Term Memory
 Introduce a separate agent memory store for:
@@ -662,6 +657,8 @@ Instead of pure recency:
 - Per-message token usage logs
 - Context diffs between requests
 - Debug flags to inspect dropped messages
+
+## <<<<<<<<<<<<<<<TEMPORARY ENDS>>>>>>>>>>>>>>>
 
 ### Tool orchestration 
 For LLm to be able to use the tools for agentic work I chose MCP server 
