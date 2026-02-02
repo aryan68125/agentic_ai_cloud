@@ -8,6 +8,31 @@ At the end what you will see is a basic version of relevance
 
 I will be adding tools support as well ... 
 
+## Techstack used
+| Layer / Concern                   | Technology / Tool                           | Why This Choice                                                      |
+| --------------------------------- | ------------------------------------------- | -------------------------------------------------------------------- |
+| **API Framework**                 | FastAPI                                     | High performance, async-first, automatic OpenAPI docs, strong typing |
+| **Language**                      | Python 3.11                                 | Mature ecosystem, async support, strong LLM tooling                  |
+| **Web Server (ASGI)**             | Uvicorn                                     | Lightweight, fast ASGI server for production workloads               |
+| **LLM Provider**                  | Hugging Face Inference API                  | Model-agnostic, supports open & gated models, enterprise-friendly    |
+| **LLM Models**                    | LLaMA, Mistral, Open models (HF Hub)        | Flexible model selection per agent                                   |
+| **Context Management**            | Server-side Sliding Window                  | Deterministic behavior, token-bounded, debuggable                    |
+| **Token Counting**                | Hugging Face Tokenizers (`AutoTokenizer`)   | Model-accurate token budgeting                                       |
+| **Database**                      | PostgreSQL                                  | Strong consistency, transactional safety, production-grade           |
+| **ORM**                           | SQLAlchemy                                  | Explicit transactions, composable queries                            |
+| **Migrations**                    | Alembic                                     | Versioned, repeatable schema evolution                               |
+| **Persistence Pattern**           | Repository Pattern                          | Clear boundaries, testability, single-table ownership                |
+| **Transaction Handling**          | Explicit DB Transactions + Rollbacks        | Prevents partial writes, safe failure handling                       |
+| **HTTP Client**                   | httpx (Async)                               | Timeout control, retries, async-safe                                 |
+| **Retry Strategy**                | Exponential Backoff                         | Network-failure tolerance                                            |
+| **Authentication**                | Hugging Face CLI / Hub Auth                 | Required for gated & private model access                            |
+| **Logging**                       | Custom Structured Logging                   | Observable behavior, production debugging                            |
+| **Configuration Management**      | `.env` + Environment Variables              | Clear separation of config and code                                  |
+| **Architecture Style**            | Layered (API → Controller → Service → Repo) | Separation of concerns, maintainability                              |
+| **Agent Orchestration (Planned)** | MCP (Model Context Protocol)                | Standardized tool + context integration                              |
+| **Tooling (Planned)**             | MCP Servers (Search, DB, FS, Email)         | Controlled agent tool access                                         |
+
+
 ## How to run this project? 
 ### Pre-requisites : 
 - You should already have the hugging face auth token if you don't have it then you can go to this 
@@ -382,6 +407,7 @@ Transactions are not started implicitly inside repositories.
 Instead:
 - transactions are started at the service or controller level
 - repositories assume a valid session already exists
+
 Rule of thumb is 
 - Repositories describe what to write.
 - Services decide when it is safe to commit.
