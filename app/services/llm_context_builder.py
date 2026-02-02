@@ -1,3 +1,11 @@
+# import logging utility
+from app.utils.logger import LoggerFactory
+
+# initialize logging utility
+info_logger = LoggerFactory.get_info_logger()
+error_logger = LoggerFactory.get_error_logger()
+debug_logger = LoggerFactory.get_debug_logger()
+
 class ContextBuilderService:
     @staticmethod
     def build(
@@ -8,6 +16,7 @@ class ContextBuilderService:
         max_tokens : int, # 3000
         reserved_for_response : int # 800
     ):
+        info_logger.info(f"ContextBuilderService.build | Building context for the hugging face LLM")
         history_budget = max_tokens - reserved_for_response
 
         messages = [{"role": "system", "content": system_prompt}]
@@ -22,4 +31,5 @@ class ContextBuilderService:
             token_count += turn_tokens
 
         messages.append({"role": "user", "content": new_user_prompt})
+        debug_logger.debug(f"ContextBuilderService.build | history_budget = {history_budget}, token_count = {token_count}, messages = {messages}")
         return messages

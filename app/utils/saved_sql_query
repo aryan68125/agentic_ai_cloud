@@ -1,8 +1,9 @@
 
 SELECT * FROM public.ai_agent_table
-ORDER BY id ASC 
+ORDER BY id ASC; 
 SELECT * FROM system_prompt_table ORDER BY id DESC;
 SELECT * FROM user_prompt_table ORDER BY id DESC;
+SELECT * FROM llm_prompt_response_table ORDER BY id DESC;
 
 DROP TABLE ai_agent_table
 DROP TABLE system_prompt_table;

@@ -55,7 +55,7 @@ class AIAgentRepository:
             debug_logger.debug(f"AIAgentRepository.insert | {AiAgentApiSuccessMessage.AGENT_NAME_INSERTED.value} | db_result = {row}")
             return RepositoryClassResponse(
                 status = True,
-                status_code = status.HTTP_200_OK,
+                status_code = status.HTTP_201_CREATED,
                 message = AiAgentApiSuccessMessage.AGENT_NAME_INSERTED.value,
                 data = row
             )

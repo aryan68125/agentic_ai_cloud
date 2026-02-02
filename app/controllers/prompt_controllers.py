@@ -30,6 +30,7 @@ debug_logger = LoggerFactory.get_debug_logger()
 
 class PromptController:
     def __init__(self, db: Session):
+        self.db = db
         self.user_prompt_repo = UserPromptRepository(db=db)
         self.system_prompt_repo = SystemPromptRepository(db=db)
     

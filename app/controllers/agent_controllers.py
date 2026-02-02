@@ -24,6 +24,7 @@ debug_logger = LoggerFactory.get_debug_logger()
 
 class AgentController:
     def __init__(self,db: Session):
+        self.db = db
         self.ai_agent_repo = AIAgentRepository(db=db)
 
     def process_agent(self, request, operation_type : str) -> APIResponseMultipleData:
