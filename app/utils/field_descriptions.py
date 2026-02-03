@@ -22,4 +22,8 @@ class AgentRequestFieldDescription(Enum):
 class LLMPromptResponseClassRequestFieldDescription(Enum):
     LLM_RESPONSE_ID = "Enter primary key for the llm response"
     LLM_RESPONSE_TEXT = "Enter the llm user_prompt response from hugging face here"
+
+class SetAgentToolToAnAgentRequestFieldDescription(Enum):
+    AI_AGENT_TOOL_NAME = "Enter the tool name that you want your agent to use"
+    AGENT_TOOL_ATTACHMENT_ID = "Enter the pk of record that stores the tool is attached to the agent"
     

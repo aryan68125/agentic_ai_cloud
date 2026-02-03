@@ -53,4 +53,11 @@ class HuggingFaceAIModelAPIErrorMessage(Enum):
     LLM_PROMPT_HUGGING_FACE_ERROR = "Invalid LLM response: content missing or not a string"
     HUGGING_FACE_LLM_API_TIMEOUT = "LLM response timed out. Model is slow or overloaded."
     LLM_CONTEXT_LIMIT_EMPTY = "Limit for the llm context cannot be less than or equal to zero or None"
+
+class AIAgentToolApiErrorMessage(Enum):
+    AGENT_TOOL_NAME_EMPTY = "Agent tool name cannot be empty!"
+    AGENT_TOOL_NAME_INVALID = "Agent tool name entered is invalid!"
+
+    AGENT_TOOL_ATTACHMENT_ID = "Agent tool attachment id must not be empty!"
+    AGENT_TOOL_IS_NOT_ATTACHED_ERR = "The tool you are trying to detach is not attached in the first place!"
     
