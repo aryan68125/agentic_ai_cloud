@@ -163,7 +163,7 @@ class ProcessHuggingFaceAIPromptService:
                 system_prompt=system_prompt_get_result.data["llm_system_prompt"],
                 conversation_turns=conversation_result.data,
                 new_user_prompt=request.user_prompt,
-                token_counter=TokenCounter.count,  # or tiktoken wrapper
+                token_counter=TokenCounter.count, 
                 max_tokens=3000,
                 reserved_for_response=800
             )
