@@ -25,4 +25,5 @@ class LLMPromptResponseClassRequestFieldDescription(Enum):
 
 class SetAgentToolToAnAgentRequestFieldDescription(Enum):
     AI_AGENT_TOOL_NAME = "Enter the tool name that you want your agent to use"
+    AGENT_TOOL_ATTACHMENT_ID = "Enter the pk of record that stores the tool is attached to the agent"
     

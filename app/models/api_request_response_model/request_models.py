@@ -99,7 +99,7 @@ class ResetHuggingFaceAIModelContextRequest(BaseModel):
     
 class SetAgentToolToAnAgentRequest(BaseModel):
     agent_id : str = Field(default=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
-    agent_tool_name : str = Field(default=None,description = SetAgentToolToAnAgentRequestFieldDescription.AI_AGENT_TOOL_NAME.value)
+    agent_tool_name : Optional[str] = Field(default=None,description = SetAgentToolToAnAgentRequestFieldDescription.AI_AGENT_TOOL_NAME.value)
     @model_validator(mode="after")
     def validate_fields(self):
         if not self.agent_id:
@@ -109,3 +109,7 @@ class SetAgentToolToAnAgentRequest(BaseModel):
                 detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
             )
         return self
+    
+class DetachAgentToolFromAgentRequest(BaseModel):
+    agent_tool_attachment_id : Optional[int] = Field(default=None, description = SetAgentToolToAnAgentRequestFieldDescription.AGENT_TOOL_ATTACHMENT_ID.value)
+    agent_id : Optional[str] = Field(default=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)

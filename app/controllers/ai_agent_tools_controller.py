@@ -61,14 +61,14 @@ class AIAgentToolController:
             return APIResponse(
                 status = usert_result.status_code,
                 message = usert_result.message,
-                data=usert_result.data
+                data = usert_result.data
             )
         except TransactionAbort as e:
             error_logger.error(f"AIAgentToolController.set_tool_to_an_ai_agent | {str(e)}")
             return APIResponse(
                 status = usert_result.status_code,
                 message = usert_result.message,
-                data=usert_result.data
+                data = usert_result.data
             ) 
         except Exception as e:
             error_logger.error(f"AIAgentToolController.set_tool_to_an_ai_agent | {str(e)}")
@@ -77,4 +77,36 @@ class AIAgentToolController:
                 detail=str(e)
             )
 
+    def remove_tool_from_agent(self,request,MULTI_TOOL : bool = False):
+        try:
+            info_logger.info(f"AIAgentToolController.remove_tool_from_agent | Detach 1 tool from the ai agent | request = {request}, MULTI_TOOL = {MULTI_TOOL}")
+            if not MULTI_TOOL:
+                with self.db.begin():
+                    detach_tool_result = self.agent_tool_repository.delete_one_tool(agent_tool_attachment_id = request.agent_tool_attachment_id)
+                    if not detach_tool_result.status:
+                        raise TransactionAbort(detach_tool_result)
+            if MULTI_TOOL:
+                with self.db.begin():
+                    detach_tool_result = self.agent_tool_repository.delete_multi_tool(agent_id = request.agent_id)
+                    if not detach_tool_result.status:
+                        raise TransactionAbort(detach_tool_result)
+
+            return APIResponse(
+                status = detach_tool_result.status_code,
+                message = detach_tool_result.message,
+                data = detach_tool_result.data
+            )
+        except TransactionAbort as e:
+            error_logger.error(f"AIAgentToolController.remove_tool_from_agent | {str(e)}")
+            return APIResponse(
+                status = detach_tool_result.status_code,
+                message = detach_tool_result.message,
+                data = detach_tool_result.data
+            ) 
+        except Exception as e:
+            error_logger.error(f"AIAgentToolController.remove_tool_from_agent | {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            )
         

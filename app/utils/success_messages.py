@@ -44,3 +44,5 @@ class AIAgentToolApiSuccessMessage(Enum):
     SET_AGENT_TOOL_SUCCESS = "Tool attached successfully to this ai agent!"
     TOOL_ALREADY_ATTACHED = "Tool already attached. Timestamp updated."
     TOOL_ATTACHED = "Tool attached to agent."
+
+    TOOL_DETACHED_FROM_THE_AGENT_SUCCESS = "Tool detached from the agent successfully!"

@@ -35,4 +35,6 @@ class AgentApiUrls(Enum):
 class AiAgentToolUrls(Enum):
     GET_ALL_AI_AGENT_TOOLS = "/process/agent_tools/get"
     SET__TOOL_TO_AN_AGENT = "/process/set_agent_tool"
+    DETACH_AGENT_TOOL = "/process/detach_agent_tool"
+    DETACH_ALL_AGENT_TOOLs = "/process/reset_agent_tools"
 

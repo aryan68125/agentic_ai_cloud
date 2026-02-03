@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks, Request, Body
 from app.dependencies.controller_dependencies import get_ai_agent_tool_controller
 
 # import request model
-from app.models.api_request_response_model.request_models import SetAgentToolToAnAgentRequest
+from app.models.api_request_response_model.request_models import (SetAgentToolToAnAgentRequest, DetachAgentToolFromAgentRequest)
 
 # import controller
 from app.controllers.ai_agent_tools_controller import AIAgentToolController
@@ -47,3 +47,23 @@ def set_agent_tool_to_an_agent(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"get_list_of_agent_tools | url = {BASE_URL_FAST_API_SERVER}{AiAgentToolUrls.SET__TOOL_TO_AN_AGENT.value} | {AIAgentToolApiSuccessMessage.SET_AGENT_TOOL_SUCCESS.value}")
     return controller.set_tool_to_an_ai_agent(request=request)
+
+@router.post("/detach_agent_tool")
+def detach_one_tool_from_agent(
+    request : DetachAgentToolFromAgentRequest,
+    http_request: Request,
+    controller: AIAgentToolController = Depends(get_ai_agent_tool_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"detach_one_tool_from_agent | url = {BASE_URL_FAST_API_SERVER}{AiAgentToolUrls.DETACH_AGENT_TOOL.value} | {AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value}")
+    return controller.remove_tool_from_agent(request=request, MULTI_TOOL = False)
+
+@router.delete("/reset_agent_tools")
+def detach_all_tools_from_agent(
+    request : DetachAgentToolFromAgentRequest,
+    http_request: Request,
+    controller: AIAgentToolController = Depends(get_ai_agent_tool_controller)
+):
+    BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
+    info_logger.info(f"detach_all_tools_from_agent | url = {BASE_URL_FAST_API_SERVER}{AiAgentToolUrls.DETACH_ALL_AGENT_TOOLs.value} | {AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value}")
+    return controller.remove_tool_from_agent(request=request, MULTI_TOOL = True)

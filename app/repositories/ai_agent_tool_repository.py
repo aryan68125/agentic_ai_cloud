@@ -139,3 +139,78 @@ class AIAgentToolsRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e)
             )
+        
+    def delete_one_tool(self, agent_tool_attachment_id : int = None) -> RepositoryClassResponse:
+        try:
+            if not agent_tool_attachment_id:
+                error_logger.error(f"AIAgentToolsRepository.delete_one_tool | {AIAgentToolApiErrorMessage.AGENT_TOOL_ATTACHMENT_ID.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    message=AIAgentToolApiErrorMessage.AGENT_TOOL_ATTACHMENT_ID.value,
+                ) 
+            obj = delete(AttachedAIToolsTable).where(AttachedAIToolsTable.id == agent_tool_attachment_id)
+            result = self.db.execute(obj)
+            self.db.flush()
+
+            debug_logger.debug(f"AIAgentToolsRepository.delete_one_tool | delete the tool attached to the agent | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
+                debug_logger.debug(f"AIAgentToolsRepository.delete_one_tool | {AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value}")
+                return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value,
+                    data = {}
+                ) 
+            else:
+                error_logger.error(f"AIAgentToolsRepository.delete_one_tool | {AIAgentToolApiErrorMessage.AGENT_TOOL_IS_NOT_ATTACHED_ERR.value}")
+                return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message = AIAgentToolApiErrorMessage.AGENT_TOOL_IS_NOT_ATTACHED_ERR.value
+                ) 
+        except Exception as e:
+            error_logger.error(f"AIAgentToolsRepository.delete_one_tool | {str(e)}")
+            return RepositoryClassResponse(
+                status=False,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=str(e)
+            ) 
+        
+    def delete_multi_tool(self, agent_id : str = None) -> RepositoryClassResponse:
+        try:
+            if not agent_id or agent_id is None or agent_id == "":
+                error_logger.error(f"AIAgentToolsRepository.delete_multi_tool | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+            
+            obj = delete(AttachedAIToolsTable).where(AttachedAIToolsTable.ai_agent_id == agent_id)
+            result = self.db.execute(obj)
+            self.db.flush()
+
+            debug_logger.debug(f"AIAgentToolsRepository.delete_multi_tool | delete all tools attached to the agent | db_response = {result.rowcount > 0}")
+            if result.rowcount > 0:
+                debug_logger.debug(f"AIAgentToolsRepository.delete_multi_tool | {AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value}")
+                return RepositoryClassResponse(
+                    status = True,
+                    status_code = status.HTTP_204_NO_CONTENT,
+                    message = AIAgentToolApiSuccessMessage.TOOL_DETACHED_FROM_THE_AGENT_SUCCESS.value,
+                    data = {}
+                ) 
+            else:
+                error_logger.error(f"AIAgentToolsRepository.delete_multi_tool | {AIAgentToolApiErrorMessage.AGENT_TOOL_IS_NOT_ATTACHED_ERR.value}")
+                return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_404_NOT_FOUND,
+                    message = AIAgentToolApiErrorMessage.AGENT_TOOL_IS_NOT_ATTACHED_ERR.value
+                ) 
+        except Exception as e:
+            error_logger.error(f"AIAgentToolsRepository.delete_multi_tool | {str(e)}")
+            return RepositoryClassResponse(
+                status=False,
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                message=str(e)
+            )

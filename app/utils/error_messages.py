@@ -57,4 +57,7 @@ class HuggingFaceAIModelAPIErrorMessage(Enum):
 class AIAgentToolApiErrorMessage(Enum):
     AGENT_TOOL_NAME_EMPTY = "Agent tool name cannot be empty!"
     AGENT_TOOL_NAME_INVALID = "Agent tool name entered is invalid!"
+
+    AGENT_TOOL_ATTACHMENT_ID = "Agent tool attachment id must not be empty!"
+    AGENT_TOOL_IS_NOT_ATTACHED_ERR = "The tool you are trying to detach is not attached in the first place!"
     
