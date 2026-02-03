@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field, model_validator
 from fastapi import HTTPException, status
 from typing import List, Dict, Any, Optional
-from app.utils.error_messages import (PromptApiErrorMessages, SystemPromptApiErrorMessages, AgentApiErrorMessages)
-from app.utils.field_descriptions import (PromptRequestFieldDescriptions, AgentRequestFieldDescription, SystemPromptRequestFieldDescription)
+from app.utils.error_messages import (PromptApiErrorMessages, AIAgentToolApiErrorMessage, AgentApiErrorMessages)
+from app.utils.field_descriptions import (SetAgentToolToAnAgentRequestFieldDescription, PromptRequestFieldDescriptions, AgentRequestFieldDescription, SystemPromptRequestFieldDescription)
 
 # import logging utility
 from app.utils.logger import LoggerFactory
@@ -86,11 +86,24 @@ class HuggingFacePromptRequest(BaseModel):
         return self
     
 class ResetHuggingFaceAIModelContextRequest(BaseModel):
-    agent_id : str = Field(default="",description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+    agent_id : str = Field(default=None,description = AgentRequestFieldDescription.AI_AGENT_ID.value)
     @model_validator(mode="after")
     def validate_fields(self):
         if not self.agent_id:
             error_logger.error(f"HuggingFacePromptRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+            )
+        return self
+    
+class SetAgentToolToAnAgentRequest(BaseModel):
+    agent_id : str = Field(default=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+    agent_tool_name : str = Field(default=None,description = SetAgentToolToAnAgentRequestFieldDescription.AI_AGENT_TOOL_NAME.value)
+    @model_validator(mode="after")
+    def validate_fields(self):
+        if not self.agent_id:
+            error_logger.error(f"SetAgentToolToAnAgentRequest.validate_fields | error = {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value

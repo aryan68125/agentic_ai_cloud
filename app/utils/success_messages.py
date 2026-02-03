@@ -38,3 +38,9 @@ class AiAgentApiSuccessMessage(Enum):
     AGENT_NAME_UPDATED = "AI Agent name updated successfully!"
     AGENT_NAME_DELETED = "AI Agent name delete success!"
     AGENT_NAME_FETCHED = "AI Agent name fetched successfully!"
+
+class AIAgentToolApiSuccessMessage(Enum):
+    AI_AGENT_TOOL_LIST_FETCHED = "Ai agent tool list fetched successfully!"
+    SET_AGENT_TOOL_SUCCESS = "Tool attached successfully to this ai agent!"
+    TOOL_ALREADY_ATTACHED = "Tool already attached. Timestamp updated."
+    TOOL_ATTACHED = "Tool attached to agent."

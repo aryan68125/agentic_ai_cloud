@@ -17,6 +17,7 @@ from app.models.db_table_models.ai_agent_table import AIAgentName
 from app.models.db_table_models.user_prompt_table import UserPrompt
 from app.models.db_table_models.system_prompt_table import SystemPrompt
 from app.models.db_table_models.llm_prompt_response_table import LLMPromptResponseTable
+from app.models.db_table_models.attached_ai_tools_table import AttachedAIToolsTable
 # import all the sql alchemy table models here so that albemic can track the migrations for each table in db [ENDS]
 
 from sqlalchemy import create_engine

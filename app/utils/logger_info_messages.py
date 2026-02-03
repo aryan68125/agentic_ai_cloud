@@ -32,3 +32,7 @@ class AgentApiUrls(Enum):
     DELETE_AGENT_API_URL = "/process/agent/delete"
     GET_AGENT_API_URL = "/process/agent/get"
 
+class AiAgentToolUrls(Enum):
+    GET_ALL_AI_AGENT_TOOLS = "/process/agent_tools/get"
+    SET__TOOL_TO_AN_AGENT = "/process/set_agent_tool"
+
