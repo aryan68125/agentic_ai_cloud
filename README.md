@@ -720,3 +720,151 @@ MCP server fits this project's use case and what I am trying to do
 - persistence (DB)
 - HF compatibility
 - future multi-model support
+
+
+## Research tool implementation proposal (Planned)
+```bash
+User Prompt
+   ↓
+Primary Agent (DeepSeek / Llama)
+   ↓
+Detects need for fresh info
+   ↓
+Calls "research tool"
+   ↓
+Research tool = Perplexity R1 + DuckDuckGo
+   ↓
+Structured factual findings
+   ↓
+Primary Agent synthesizes final answer
+
+```
+This architecture avoids model hellucination.
+
+### What each model should do (clear responsibility split)
+#### DeepSeek-R1 / Llama-3.1 (PRIMARY AGENTS)
+Role
+- Reasoning
+- Planning
+- Tool orchestration
+- Memory
+- Safety enforcement
+- Final answer generation
+
+They should:
+- Decide when information is outdated
+- Decide what to search
+- Decide how to combine sources
+
+#### Perplexity R1 (RESEARCH ENGINE)
+Role
+- Fast factual lookup
+- Web-grounded summaries
+- Source-heavy answers
+- No memory
+- No tool loops
+- No agent autonomy
+
+It should:
+- Answer narrow research questions
+- Return facts + citations
+- Be stateless
+
+#### DuckDuckGo (RAW DATA SOURCE)
+Role
+- Fresh web content
+- Breadth over depth
+
+Used by:
+- Perplexity directly
+- OR your own search tool
+
+#### The correct execution pattern (IMPORTANT)
+What NOT to do
+- Don’t let Perplexity talk directly to users
+- Don’t let Perplexity manage memory
+- Don’t let Perplexity decide tools
+- Don’t mix Perplexity into your chat loop
+
+#### What TO do (recommended)
+**Step 1: Primary agent decides it needs fresh data** <br>
+```bash
+If information may be outdated or time-sensitive,
+request the research tool instead of answering.
+```
+
+**Step 2: Research tool calls Perplexity** <br>
+```python
+class ResearchTool:
+    async def run(self, query: str) -> dict:
+        """
+        1. Call Perplexity R1 (flattened prompt)
+        2. Optionally call DuckDuckGo directly
+        3. Normalize output
+        """
+```
+
+Perplexity prompt example (single-shot):
+```bash
+Provide a factual, up-to-date summary for:
+
+"<query>"
+
+Rules:
+- Use recent sources
+- Cite sources
+- Be concise
+```
+
+**Step 3: Normalize output (CRITICAL)** <br>
+You should never pass raw Perplexity text back. Normalize it:
+```bash
+{
+  "summary": "…",
+  "key_facts": [
+    "Fact 1",
+    "Fact 2"
+  ],
+  "sources": [
+    {"title": "...", "url": "..."}
+  ],
+  "confidence": "high"
+}
+```
+This protects your system from:
+- Prompt injection
+- Formatting chaos
+- Model bias
+
+**Step 4: Primary agent synthesizes final answer** <br>
+Now DeepSeek / Llama gets:
+```bash
+Research findings (from web):
+
+Summary: ...
+Key facts: ...
+Sources: ...
+
+Now answer the user clearly and safely.
+```
+This gives you:
+- Reasoning + grounding
+- Up-to-date info
+- Clean citations
+- Predictable behavior
+
+#### Why this is a STRONG design choice
+Advantages :
+- Best of both worlds
+- No hallucination
+- Model-agnostic
+- MCP-compatible later
+- Easy to audit
+- Easy to cache
+- Easy to rate-limit
+
+If you don’t do this
+- Agents hallucinate
+- Users lose trust
+- Models fight each other
+- Debugging becomes hell
