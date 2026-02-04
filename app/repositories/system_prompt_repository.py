@@ -249,7 +249,6 @@ class SystemPromptRepository:
         
     def get_all(self, limit : int = 10, before_id : int = None) -> RepositoryClassResponse:
         try:
-            print(f"limit : {limit}, before_id : {before_id}")
             # hard safety cap
             limit = min(10 if limit <=0 else limit, 50)
             fetch_limit = limit + 1

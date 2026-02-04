@@ -46,3 +46,4 @@ class AIAgentToolApiSuccessMessage(Enum):
     TOOL_ATTACHED = "Tool attached to agent."
 
     TOOL_DETACHED_FROM_THE_AGENT_SUCCESS = "Tool detached from the agent successfully!"
+    TOOLS_ATTCHED_TO_AGENT_LIST_FETCH = "Tools attached to the agent is fetched successfully!"
