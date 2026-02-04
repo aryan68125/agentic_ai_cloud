@@ -771,7 +771,7 @@ Silence ≠ “no tools” to an LLM.
 To the model:
 - “No tools listed” ≠ “tools explicitly listed as none”
 
-**The real fix (non-negotiable)** <br>
+**How I fixed this issue** <br>
 I must ALWAYS inject an “Available Tools” section Even when zero tools exist. <br>
 This is the key rule:
 - Never omit the tool section.
@@ -906,6 +906,19 @@ Primary Agent synthesizes final answer
 
 ```
 This architecture avoids model hellucination.
+
+### Components of an Agent Runtime Contract
+| Layer        | Your Implementation                             |
+| ------------ | ----------------------------------------------- |
+| Identity     | `SYSTEM PROMPT — Ballistics Research Assistant` |
+| Capabilities | `AVAILABLE TOOLS`                               |
+| Constraints  | “Do NOT mention…”                               |
+| Obligations  | “Reply EXACTLY…”                                |
+| Context      | Conversation history                            |
+| Budget       | TokenCounter                                    |
+| Execution    | Hugging Face API                                |
+| Enforcement  | ToolPromptBuilder                               |
+
 
 ### What each model should do (clear responsibility split)
 #### DeepSeek-R1 / Llama-3.1 (PRIMARY AGENTS)
