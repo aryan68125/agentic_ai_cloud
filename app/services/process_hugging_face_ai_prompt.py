@@ -14,6 +14,7 @@ import httpx
 from app.repositories.user_prompt_repository import UserPromptRepository
 from app.repositories.system_prompt_repository import SystemPromptRepository
 from app.repositories.llm_prompt_response_repository import LLmPromptResponseRepository
+from app.repositories.ai_agent_tool_repository import AIAgentToolsRepository
 
 # import models
 from app.models.class_return_model.services_class_response_models import RepositoryClassResponse
@@ -34,7 +35,7 @@ from app.utils.logger import LoggerFactory
 # import other services on which this service depends on 
 from app.services.llm_context_builder import ContextBuilderService
 from app.services.token_counter import TokenCounter
-
+from app.services.tool_prompt_builder import ToolPromptBuilder
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -49,7 +50,9 @@ class ProcessHuggingFaceAIPromptService:
         self.user_prompt_repo = UserPromptRepository(db=db)
         self.system_prompt_repo = SystemPromptRepository(db=db)
         self.llm_response_repo = LLmPromptResponseRepository(db=db)
+        self.tools_repository = AIAgentToolsRepository(db=db)
         self.process_response_service = ProcessPromptResponseService()
+        self.tool_prompt_builder_service = ToolPromptBuilder()
 
         # initialze the httpx here before making any call to hugging face
         self.client = httpx.AsyncClient(
@@ -157,17 +160,32 @@ class ProcessHuggingFaceAIPromptService:
                 )
                 if not conversation_result.status:
                     raise TransactionAbort(conversation_result)
-            # 2. Build context window
+                
+            # 2. attach the tool prompt after the system prompt
+            with self.db.begin():
+                tools_result = self.tools_repository.get_all_attached_tools(agent_id=request.agent_id)
+                if not tools_result.status:
+                    raise TransactionAbort(tools_result)
+                
+            tool_prompt = self.tool_prompt_builder_service.build(tools_result.data.get("items"))
+
+            final_system_prompt = (
+                system_prompt_get_result.data["llm_system_prompt"]
+                + tool_prompt
+            )
+
+            # 3. Build context window
             messages = ContextBuilderService.build(
                 model_name=system_prompt_get_result.data["ai_model"],
-                system_prompt=system_prompt_get_result.data["llm_system_prompt"],
+                system_prompt=final_system_prompt,
                 conversation_turns=conversation_result.data,
                 new_user_prompt=request.user_prompt,
                 token_counter=TokenCounter.count, 
                 max_tokens=3000,
                 reserved_for_response=800
             )
-            # 3. Create the new body for HF LLM api
+                
+            # 4. Create the new body for HF LLM api
             body = {
                 "model": system_prompt_get_result.data["ai_model"],
                 "messages": messages

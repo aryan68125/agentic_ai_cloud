@@ -214,3 +214,41 @@ class AIAgentToolsRepository:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 message=str(e)
             )
+        
+    def get_all_attached_tools(self, agent_id : str = None) -> RepositoryClassResponse:
+        try:
+            if not agent_id or agent_id is None or agent_id == "":
+                error_logger.error(f"AIAgentToolsRepository.get_all | {AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code = status.HTTP_400_BAD_REQUEST,
+                    message=AgentApiErrorMessages.AI_AGENT_ID_EMPTY.value
+                )
+
+            
+            obj = (
+                select(AttachedAIToolsTable)
+                .where(AttachedAIToolsTable.ai_agent_id==agent_id)
+                .order_by(AttachedAIToolsTable.created_at.desc())
+            )
+    
+            rows = self.db.execute(obj).scalars().all()
+            rows = [row.to_dict() for row in rows]
+
+            debug_logger.debug(f"AIAgentToolsRepository.get_all | db_response = {len(rows)}")
+
+            return RepositoryClassResponse(
+                        status = True,
+                        status_code = status.HTTP_200_OK,
+                        message = AIAgentToolApiSuccessMessage.TOOLS_ATTCHED_TO_AGENT_LIST_FETCH.value,
+                        data={
+                            "items": rows
+                        }
+                    )
+        except Exception as e:
+            error_logger.error(f"UserPromptRepository.get_all | {str(e)}")
+            return RepositoryClassResponse(
+                    status = False,
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message = str(e)
+                )

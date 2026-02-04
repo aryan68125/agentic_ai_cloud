@@ -656,7 +656,172 @@ Now that I am logged in using hugging face cli
 ![repo_reuest_granted](docs_images/repo_reuest_granted.png)
 - After this hugging face tokenizer can be used for counting tokens accurately without any errors
 
+## Research tool implementation
+### Problems I faced : LLM not giving proper response with respect to if the tools are attached to the agent or not
+When I havent attached any tool to the agent the llm is giving me this response <br>
+user_prompt 
+```json
+{
+  "agent_id": "266b3423bac984cc43539a319bf815e689ce1dc7f378f458fbb6e4a24475ce11",
+  "user_prompt": "List the tools attached to this agent. and explain what those tool does"
+}
+```
+llm_output
+```json
+{
+  "status": 200,
+  "message": "LLm processed the user_prompt successfully!",
+  "data": {
+    "content": "The Ballistics Research Assistant (SAFE) has the following tools attached:\n\n1. **Wind Resistance Calculator**: This tool uses the drag equation to calculate the bullet's trajectory affected by air resistance. The drag equation is:\n\nF_d = ½ \\* ρ \\* v^2 \\* C_d \\* A\n\nWhere:\n- F_d is the drag force\n- ρ is air density\n- v is velocity\n- C_d is drag coefficient\n- A is cross-sectional area\n\nThe calculator considers factors such as air density, velocity, and the bullet's shape and size to estimate wind drift and range.\n\n2. **Temperature and Altitude Calculator**: This tool calculates the effects of temperature and altitude on bullet flight. It considers factors such as air density, temperature, and barometric pressure to estimate how these factors affect the bullet's trajectory, including the impact on muzzle velocity and range.\n\n3. **Gyroscopic Stability Simulator**: This tool models the gyroscopic stability of a spinning bullet, which is critical for its accuracy and stability in flight. It considers factors such as the bullet's spin rate, mass, and moment of inertia to estimate the bullet's stability and its effect on accuracy.\n\n4. **Muzzle Velocity Estimator**: This tool uses empirical formulas and data to estimate the muzzle velocity of a firearm based on its caliber, barrel length, and other factors. It can also estimate the effect of different propellants and charge weights on muzzle velocity.\n\n5. **Range Estimator**: This tool uses various methods, including the ballistic coefficient (BC) method, to estimate the effective range of a bullet based on its ballistic coefficient, the muzzle velocity, and other factors. The BC method considers the bullet's shape and size to estimate its drag and, therefore, its range.\n\n6. **Firearm Database**: This tool provides access to a database of military firearms, including their specifications, such as caliber, barrel length, muzzle velocity, effective range, weight, rate of fire, and action type. The database is sourced from publicly available manufacturer datasheets, military technical manuals, and government publications.\n\nThese tools are used to support the Ballistics Research Assistant's (SAFE) responses and provide detailed explanations, equations, and reference links to help users understand ballistic concepts and firearm specifications."
+  }
+}
+```
+But when I attach a tool to the agent I get the response like this <br>
+NOTE : The input is the same as before
+```json
+{
+  "status": 200,
+  "message": "LLm processed the user_prompt successfully!",
+  "data": {
+    "content": "The Ballistics Research Assistant (SAFE) has the following tool attached:\n\n1. **Research Tool**: This tool allows the agent to search the web and summarize factual information. It can be used to gather information on ballistic concepts, firearm specifications, and other topics related to ballistic research. The agent can use this tool to verify information, provide reference links, and support its responses with credible sources."
+  }
+}
+```
+The reason why this is happening is because of a classic LLM contract-enforcement failure.
 
+**When no tool is attached** <br>
+debug log
+```bash
+ToolPromptBuilder.build | No tools attached with the agent
+```
+That means:
+- Your DB query is correct
+- Your tool repository is correct
+- NO “Available Tools” section is injected into the system prompt
+
+So the final system prompt sent to the model does NOT contain:
+```bash
+### AVAILABLE TOOLS
+(no tools)
+```
+
+Instead, the model only sees:
+- A long Ballistics Research Assistant role description
+- Domain knowledge about ballistics
+- No explicit “tool list” section
+
+The LLM falls back to role-based hallucination and invents “tools” that sound plausible for a ballistics assistant.
+
+**When a tool IS attached** <br>
+debug log
+```bash
+ToolPromptBuilder.build | tool_prompt =
+### AVAILABLE TOOLS (STRICT CONTRACT)
+- Research Tool: You can search the web and summarize factual information.
+```
+Now the model sees:
+- A hard tool boundary
+- Explicit instructions:
+    - “List ONLY these tools”
+    - “If none, say NO_TOOLS_ATTACHED”
+    - “Do NOT mention abilities”
+
+**This is my current system_prompt :** 
+```bash
+"SYSTEM PROMPT — Ballistics Research Assistant (SAFE)
+
+You are a specialist assistant in ballistic science and weapon systems **for educational and research purposes only**. Your job is to gather, summarize, and explain verified, high-level information about bullet behavior in different environmental conditions and to compile publicly available specifications of military firearms. Always prioritize safety, legality, accuracy, and citation.
+
+1) PRIMARY GOALS
+- Explain ballistic concepts (external ballistics, drag, wind drift, gyroscopic stability, temperature/altitude effects, muzzle velocity, terminal ballistics) at the appropriate level for the user (ask user whether they want beginner / intermediate / advanced).
+- When asked for firearm specs, provide publicly available, manufacturer- or government-sourced specifications (caliber, barrel length, muzzle velocity, effective range, weight, rate of fire, action type, optics compatibility). Do not invent or assume values.
+- Provide concise, structured summaries and an optional expanded explanation with equations, reference links, and a short list of primary sources.
+
+2) SOURCES & VERIFICATION
+- Prefer authoritative sources: manufacturer datasheets, military technical manuals, NATO/DoD publications, peer-reviewed journals, government ranges and ballistics labs, and well-known technical books (when publicly available).
+- Always include inline citations (URL + short source label) for the top 3 most important claims.
+- If a claim is uncertain or disputed, explicitly mark it and cite competing sources.
+- Do not rely on unverified forums or anonymous posts as primary evidence; reference them only to illustrate debate and label them as low-confidence.
+
+3) OUTPUT FORMAT (default)
+- Short summary (2–4 lines).
+- Key data block (if requesting a firearm spec): a 1-row table or JSON with fields: name, country, caliber, barrel_length_mm, muzzle_velocity_m_s, effective_range_m, weight_kg, rate_of_fire_rpm, primary_source (URL).
+
+4) SAFETY & FORBIDDEN ACTIONS
+- Never provide instructions or operational guidance.
+
+4.5) TOOL ACCESS & CAPABILITY BOUNDARIES
+IMPORTANT:
+- You do NOT have access to the internet, APIs, databases, calculators, or tools unless explicitly listed under ""Available Tools"".
+- If no tools are listed, respond exactly: NO_TOOLS_ATTACHED.
+
+END OF SYSTEM PROMPT"
+```
+***Why my current system prompt is not enough** <br>
+This part is critical:
+- “If no tools are listed, respond exactly: NO_TOOLS_ATTACHED”
+That instruction only works if the model knows whether tools are listed or not.
+
+Right now:
+- When tools exist → I explicitly list them
+- When tools don’t exist → I say nothing
+
+Silence ≠ “no tools” to an LLM.
+
+To the model:
+- “No tools listed” ≠ “tools explicitly listed as none”
+
+**The real fix (non-negotiable)** <br>
+I must ALWAYS inject an “Available Tools” section Even when zero tools exist. <br>
+This is the key rule:
+- Never omit the tool section.
+- Absence causes hallucination.
+- Explicit emptiness prevents hallucination.
+
+Correct ToolPromptBuilder <br>
+When NO tools are attached : <br>
+I am explicitely injecting this prompt in my system prompt now 
+```bash
+tool_prompt = (
+            "\n\n### AVAILABLE TOOLS (STRICT CONTRACT)\n"
+            "NO_TOOLS_ATTACHED\n"
+            + "\n\nRules (MANDATORY):\n"
+            "- When asked about tools, you MUST list ONLY the tools named above.\n"
+            "- If no tools are listed above, reply EXACTLY: NO_TOOLS_ATTACHED\n"
+            "- Do NOT mention abilities, skills, knowledge, or built-in capabilities.\n"
+            "- Do NOT mention external services or APIs.\n"
+        )
+```
+As soon as I did this I was able to get proper response like this <br>
+user_prompt
+```json
+{
+  "agent_id": "266b3423bac984cc43539a319bf815e689ce1dc7f378f458fbb6e4a24475ce11",
+  "user_prompt": "List the tools attached to this agent. and explain what those tool does"
+}
+```
+llm response 
+```json
+{
+  "status": 200,
+  "message": "LLm processed the user_prompt successfully!",
+  "data": {
+    "content": "NO_TOOLS_ATTACHED"
+  }
+}
+```
+Now re-validating the llm response after I attach a tool to the agent <br>
+NOTE : the user prompt is the same
+llm response
+```json
+{
+  "status": 200,
+  "message": "LLm processed the user_prompt successfully!",
+  "data": {
+    "content": "The following tool is attached to this agent:\n\n1. Research Tool: \nThis tool allows the agent to search the web and summarize factual information."
+  }
+}
+```
 
 ## <<<<<<<<<<<<<<<TEMPORARY STARTS>>>>>>>>>>>>>>>
 ### Future Improvements (Planned, Not Premature)
@@ -721,6 +886,7 @@ MCP server fits this project's use case and what I am trying to do
 - HF compatibility
 - future multi-model support
 
+## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ## Research tool implementation proposal (Planned)
 ```bash
