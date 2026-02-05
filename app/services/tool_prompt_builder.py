@@ -8,40 +8,35 @@ class ToolPromptBuilder:
     @staticmethod
     def build(attached_tools: list[dict]) -> str:
         info_logger.info("ToolPromptBuilder.build | Building tool prompt")
-
         if not attached_tools:
-            debug_logger.debug("ToolPromptBuilder.build | No tools attached")
-            return (
+            response = (
                 "\n\n### AVAILABLE TOOLS\n"
                 "None\n"
-                "\n\nRules:\n"
-                "- You MUST NOT claim access to any tools.\n"
-                "- You MUST request research ONLY if explicitly allowed by the system.\n"
             )
+            debug_logger.debug(f"ToolPromptBuilder.build | no tool attached | response = {response}")
+            return response
 
-        tool_descriptions: list[str] = []
+        tools = []
 
         for tool in attached_tools:
-            debug_logger.debug(f"ToolPromptBuilder.build | tool = {tool}")
-
             if tool.get("agent_tool_name") == AiAgentToolsList.RESEARCH_TOOL.value:
-                tool_descriptions.append(
-                    "- Research Tool: Can request verified factual information via the platform."
-                )
+                tools.append("- Research Tool: Can request verified factual information via the platform.")
 
-        if not tool_descriptions:
-            debug_logger.debug("ToolPromptBuilder.build | No matching tool descriptions")
+        debug_logger.debug(f"ToolPromptBuilder.build | Tools list attached to the agent | tools = {tools}")
+
+        if not tools:
+            debug_logger.debug(f"ToolPromptBuilder.build | Tools list empty")
             return (
                 "\n\n### AVAILABLE TOOLS\n"
                 "None\n"
-                "\n\nRules:\n"
-                "- You MUST NOT claim access to any tools.\n"
             )
-
-        return (
+        final_response = (
             "\n\n### AVAILABLE TOOLS\n"
-            + "\n".join(tool_descriptions)
+            + "\n".join(tools)
             + "\n\nRules:\n"
-            "- You may request tool usage ONLY via structured control output.\n"
-            "- Do NOT describe tool internals or APIs.\n"
+            # [OLD CODE REMOVE LATER]
+            # "- If external verified information is required, emit <<REQUEST_RESEARCH>>\n"
+            "- Do NOT define formats or schemas\n"
         )
+        debug_logger.debug(f"ToolPromptBuilder.build | final_response = {final_response}")
+        return final_response

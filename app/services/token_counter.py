@@ -2,15 +2,6 @@ from transformers import AutoTokenizer
 from threading import Lock
 
 class TokenCounter:
-    """
-    TokenCounter v2 (Model-Agnostic)
-
-    - Supports ANY Hugging Face model
-    - Automatically loads the correct tokenizer
-    - Caches tokenizers per model
-    - Thread-safe
-    """
-
     _tokenizers: dict[str, AutoTokenizer] = {}
     _lock = Lock()
 

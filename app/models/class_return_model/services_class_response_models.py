@@ -11,3 +11,10 @@ class RepositoryClassResponse(BaseModel):
     status_code : Optional[int] = Field(default_factory=None)
     message : str = Field(default = None)
     data : Optional[Any] = Field(default_factory=dict)
+
+class ToolControlsignalResponse(BaseModel):
+    status : bool = Field(default_factory = False)
+    status_code : Optional[int] = Field(default_factory=None)
+    message : str = Field(default = None)
+    data : Optional[Any] = Field(default_factory=dict)
+    response_type : str
