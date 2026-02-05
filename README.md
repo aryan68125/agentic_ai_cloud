@@ -200,96 +200,160 @@ alembic -c alembic.ini upgrade head
 
 **NOTE:** Make sure that your project structure looks something like this 
 ```bash
-.
-├── alembic
-│   ├── env.py
-│   ├── README
-│   ├── script.py.mako
-│   └── versions
-│       ├── 027e8d073bf8_create_ai_agent_table.py
-│       ├── 20178cf2ef3e_create_user_prompt_table.py
-│       ├── 37463c85173b_create_tables.py
-│       ├── 4778aedf35a2_create_ai_agent_table.py
-│       ├── 53e83fac2395_create_system_prompt_table.py
-│       ├── 5cffdaf15574_create_llm_prompt_response_table.py
-│       ├── 6146d779b733_create_system_prompt_table.py
-│       ├── b20ac25ffcd0_create_system_prompt_table.py
-│       ├── c3c1c2bd75c0_create_system_prompt_table.py
-│       ├── c7af7dbf402a_create_user_prompt_table.py
-│       ├── ff1251aeb20c_create_user_prompt_table.py
-├── alembic.ini
-├── app
-│   ├── apis
-│   │   ├── agent_api.py
-│   │   ├── hugging_face_api.py
-│   │   ├── __init__.py
-│   │   ├── prompt_apis.py
-│   ├── configs
-│   │   ├── config.py
-│   │   ├── __init__.py
-│   ├── controllers
-│   │   ├── agent_controllers.py
-│   │   ├── hugging_face_ai_model_controllers.py
-│   │   ├── __init__.py
-│   │   ├── prompt_controllers.py
-│   ├── database
-│   │   ├── base.py
-│   │   ├── db_session.py
-│   │   ├── db_transaction_exception_handler.py
-│   ├── dependencies
-│   │   ├── controller_dependencies.py
-│   │   ├── __init__.py
+app
+├── apis
+│   ├── agent_api.py
+│   ├── agent_tool_apis.py
+│   ├── hugging_face_api.py
 │   ├── __init__.py
-│   ├── logs
-│   │   ├── debug
-│   │   │   └── debug.log
-│   │   ├── error
-│   │   │   └── error.log
-│   │   └── info
-│   │       └── info.log
-│   ├── main.py
-│   ├── models
-│   │   ├── api_request_response_model
-│   │   │   ├── __init__.py
-│   │   │   ├── request_models.py
-│   │   │   └── response_models.py
-│   │   ├── class_request_model
-│   │   │   ├── class_request_model.py
-│   │   │   └── __init__.py
-│   │   ├── class_return_model
-│   │   │   ├── __init__.py
-│   │   │   └── services_class_response_models.py
-│   │   ├── db_table_models
-│   │   │   ├── ai_agent_table.py
-│   │   │   ├── __init__.py
-│   │   │   ├── llm_prompt_response_table.py
-│   │   │   ├── system_prompt_table.py
-│   │   │   └── user_prompt_table.py
+│   ├── prompt_apis.py
+│   └── __pycache__
+│       ├── agent_api.cpython-311.pyc
+│       ├── agent_tool_apis.cpython-311.pyc
+│       ├── hugging_face_api.cpython-311.pyc
+│       ├── __init__.cpython-311.pyc
+│       └── prompt_apis.cpython-311.pyc
+├── configs
+│   ├── config.py
+│   ├── __init__.py
+│   └── __pycache__
+│       ├── config.cpython-311.pyc
+│       └── __init__.cpython-311.pyc
+├── controllers
+│   ├── agent_controllers.py
+│   ├── ai_agent_tools_controller.py
+│   ├── hugging_face_ai_model_controllers.py
+│   ├── __init__.py
+│   ├── prompt_controllers.py
+│   └── __pycache__
+│       ├── agent_controllers.cpython-311.pyc
+│       ├── ai_agent_tools_controller.cpython-311.pyc
+│       ├── hugging_face_ai_model_controllers.cpython-311.pyc
+│       ├── __init__.cpython-311.pyc
+│       └── prompt_controllers.cpython-311.pyc
+├── database
+│   ├── base.py
+│   ├── db_session.py
+│   ├── db_transaction_exception_handler.py
+│   └── __pycache__
+│       ├── base.cpython-311.pyc
+│       ├── db_session.cpython-311.pyc
+│       └── db_transaction_exception_handler.cpython-311.pyc
+├── dependencies
+│   ├── controller_dependencies.py
+│   ├── __init__.py
+│   └── __pycache__
+│       ├── controller_dependencies.cpython-311.pyc
+│       └── __init__.cpython-311.pyc
+├── __init__.py
+├── logs
+│   ├── debug
+│   │   └── debug.log
+│   ├── error
+│   │   └── error.log
+│   └── info
+│       └── info.log
+├── main.py
+├── models
+│   ├── api_request_response_model
 │   │   ├── __init__.py
-│   ├── repositories
-│   │   ├── ai_agent_repository.py
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── request_models.cpython-311.pyc
+│   │   │   ├── response_models.cpython-311.pyc
+│   │   │   └── services_class_response_models.cpython-311.pyc
+│   │   ├── request_models.py
+│   │   └── response_models.py
+│   ├── class_request_model
+│   │   ├── class_request_model.py
+│   │   └── __init__.py
+│   ├── class_return_model
 │   │   ├── __init__.py
-│   │   ├── llm_prompt_response_repository.py
-│   │   ├── system_prompt_repository.py
-│   │   └── user_prompt_repository.py
-│   ├── services
-│   │   ├── process_hugging_face_ai_prompt.py
-│   │   ├── process_huggingface_ai_response.py
-│   └── utils
-│       ├── db_operation_type.py
-│       ├── error_messages.py
-│       ├── field_descriptions.py
-│       ├── get_base_url.py
-│       ├── hugging_face_ai_model_enum.py
-│       ├── __init__.py
-│       ├── logger_info_messages.py
-│       ├── logger.py
-│       ├── log_initializer.py
-│       ├── logs_re_namer.py
-│       ├── saved_sql_query
-│       └── success_messages.py
-├── README.md
-└── requirements.txt
+│   │   ├── __pycache__
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   └── services_class_response_models.cpython-311.pyc
+│   │   └── services_class_response_models.py
+│   ├── db_table_models
+│   │   ├── ai_agent_table.py
+│   │   ├── attached_ai_tools_table.py
+│   │   ├── __init__.py
+│   │   ├── llm_prompt_response_table.py
+│   │   ├── __pycache__
+│   │   │   ├── ai_agent_table.cpython-311.pyc
+│   │   │   ├── attached_ai_tools_table.cpython-311.pyc
+│   │   │   ├── __init__.cpython-311.pyc
+│   │   │   ├── llm_prompt_response_table.cpython-311.pyc
+│   │   │   ├── system_prompt_table.cpython-311.pyc
+│   │   │   └── user_prompt_table.cpython-311.pyc
+│   │   ├── system_prompt_table.py
+│   │   └── user_prompt_table.py
+│   ├── __init__.py
+│   └── __pycache__
+│       └── __init__.cpython-311.pyc
+├── __pycache__
+│   ├── __init__.cpython-311.pyc
+│   └── main.cpython-311.pyc
+├── repositories
+│   ├── ai_agent_repository.py
+│   ├── ai_agent_tool_repository.py
+│   ├── __init__.py
+│   ├── llm_prompt_response_repository.py
+│   ├── __pycache__
+│   │   ├── ai_agent_repository.cpython-311.pyc
+│   │   ├── ai_agent_tool_repository.cpython-311.pyc
+│   │   ├── __init__.cpython-311.pyc
+│   │   ├── llm_prompt_response_repository.cpython-311.pyc
+│   │   ├── system_prompt_repository.cpython-311.pyc
+│   │   └── user_prompt_repository.cpython-311.pyc
+│   ├── system_prompt_repository.py
+│   └── user_prompt_repository.py
+├── services
+│   ├── agent_capability.py
+│   ├── llm_context_builder.py
+│   ├── process_hugging_face_ai_prompt.py
+│   ├── process_huggingface_ai_response.py
+│   ├── __pycache__
+│   │   ├── agent_capability.cpython-311.pyc
+│   │   ├── llm_context_builder.cpython-311.pyc
+│   │   ├── process_hugging_face_ai_prompt.cpython-311.pyc
+│   │   ├── process_huggingface_ai_response.cpython-311.pyc
+│   │   ├── process_prompt.cpython-311.pyc
+│   │   ├── token_counter.cpython-311.pyc
+│   │   └── tool_prompt_builder.cpython-311.pyc
+│   ├── token_counter.py
+│   └── tool_prompt_builder.py
+└── utils
+    ├── agent_contract.py
+    ├── ai_tools_enum.py
+    ├── db_operation_type.py
+    ├── error_messages.py
+    ├── field_descriptions.py
+    ├── get_base_url.py
+    ├── hugging_face_ai_model_enum.py
+    ├── __init__.py
+    ├── logger_info_messages.py
+    ├── logger.py
+    ├── log_initializer.py
+    ├── logs_re_namer.py
+    ├── __pycache__
+    │   ├── agent_contract.cpython-311.pyc
+    │   ├── ai_tools_enum.cpython-311.pyc
+    │   ├── db_bootstrap.cpython-311.pyc
+    │   ├── db_conn_manager.cpython-311.pyc
+    │   ├── db_operation_type.cpython-311.pyc
+    │   ├── error_messages.cpython-311.pyc
+    │   ├── field_descriptions.cpython-311.pyc
+    │   ├── get_base_url.cpython-311.pyc
+    │   ├── hugging_face_ai_model_enum.cpython-311.pyc
+    │   ├── __init__.cpython-311.pyc
+    │   ├── logger.cpython-311.pyc
+    │   ├── logger_info_messages.cpython-311.pyc
+    │   ├── log_initializer.cpython-311.pyc
+    │   ├── logs_re_namer.cpython-311.pyc
+    │   ├── parse_json.cpython-311.pyc
+    │   └── success_messages.cpython-311.pyc
+    ├── saved_sql_query
+    └── success_messages.py
 ```
 ## The way I designed the project's flow 
 ### My design philosophy
@@ -822,6 +886,88 @@ llm response
   }
 }
 ```
+
+### Solving problem : Agent control signal management system
+
+#### Why AgentCapabilityService is needed even though tools are already in DB?
+```bash
+├── services
+│   ├── agent_capability.py
+```
+Because “having data” and “making decisions” are different responsibilities. <br>
+AIAgentToolsRepository answers one question only:
+- “What tools are attached to this agent?”
+
+It should never answer:
+- Is the tool allowed in this context?
+- Is the tool required for this request?
+- What should happen if the model asks for something illegal?
+- Should we fail, degrade, or reroute?
+
+Those are policy decisions, not persistence.
+
+If I put policy into the repository:
+- repositories become brittle
+- logic gets duplicated
+- adding a new tool becomes painful
+- future MCP / tool chaining becomes messy
+
+This gives me:
+- one place to reason about permissions
+- no string comparisons scattered across code
+- easy extension when you add new tools
+- readable orchestration logic
+
+**How AgentCapabilityService works with your code?** <br>
+1. User sends a prompt
+```json
+{
+  "agent_id": "...",
+  "user_prompt": "What are the specs of the F-22?"
+}
+```
+2. I fetch tools from DB (truth layer)
+```python
+tools_result = self.tools_repository.get_all_attached_tools(agent_id)
+```
+3. I create the capability interpreter (policy layer)
+```python
+capabilities = AgentCapabilityService(
+    tools_result.data.get("items", [])
+)
+```
+4. LLM responds with a control signal
+```python
+{
+  "action": "RESEARCH_REQUEST",
+  "queries": [...]
+}
+```
+I detect it in my back-end
+```python
+agent_action = detect_agent_action(content)
+```
+5. Backend enforces tool permission (enforcement layer)
+```python
+if agent_action:
+    if not capabilities.allows_research():
+        return error("Research tool not attached")
+```
+6. Correct branching happens
+If research IS allowed
+```json
+{
+  response_type: "CONTROL",
+  data: { "action": {...} }
+}
+```
+The orchestrator:
+- calls Perplexity
+- fetches verified data
+- re-enters MODE B later
+
+If research is NOT allowed
+- I return a controlled error.
 
 ## <<<<<<<<<<<<<<<TEMPORARY STARTS>>>>>>>>>>>>>>>
 ### Future Improvements (Planned, Not Premature)

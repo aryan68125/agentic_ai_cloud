@@ -31,11 +31,13 @@ from app.services.process_huggingface_ai_response import ProcessPromptResponseSe
 
 # import logging utility
 from app.utils.logger import LoggerFactory
+from app.utils.agent_contract import detect_agent_action
 
 # import other services on which this service depends on 
 from app.services.llm_context_builder import ContextBuilderService
 from app.services.token_counter import TokenCounter
 from app.services.tool_prompt_builder import ToolPromptBuilder
+from app.services.agent_capability import AgentCapabilityService
 
 # initialize logging utility
 info_logger = LoggerFactory.get_info_logger()
@@ -167,6 +169,10 @@ class ProcessHuggingFaceAIPromptService:
                 if not tools_result.status:
                     raise TransactionAbort(tools_result)
                 
+            capabilities = AgentCapabilityService(
+                tools_result.data.get("items", [])
+            )
+
             tool_prompt = self.tool_prompt_builder_service.build(tools_result.data.get("items"))
 
             final_system_prompt = (
@@ -206,6 +212,31 @@ class ProcessHuggingFaceAIPromptService:
                 )
             
             content = result_process_response_service.data.get("content")
+
+            # detect agent action here 
+            agent_action = detect_agent_action(content)
+            # PLATFORM CONTRACT — INTERNAL SIGNAL
+            if agent_action:
+                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | Carry out tool orchestration based on the llm model's request")
+                print(f"carry out tool orchestration based on the llm model's request")
+                if not capabilities.allows_research():
+                    error_logger.error(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | Research tool not attached to this agent")
+                    print(f"Research tool not attached to this agent")
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=400,
+                        message="Research tool not attached to this agent"
+                    )
+                return RepositoryClassResponse(
+                    status=True,
+                    status_code=status.HTTP_202_ACCEPTED,
+                    message="Agent control signal detected",
+                    data={
+                        "action": agent_action
+                    },
+                    response_type="CONTROL"
+                )
+            
             if not isinstance(content, str) or not content.strip():
                 return RepositoryClassResponse(
                     status=False,
@@ -238,12 +269,18 @@ class ProcessHuggingFaceAIPromptService:
                     }
                 )
         except TransactionAbort as e:
+            error_logger.exception(
+                f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {e.response.message}"
+            )
             return RepositoryClassResponse(
                 status=False,
                 status_code=e.response.status_code,
                 message=e.response.message
             )
         except httpx.ReadTimeout:
+            error_logger.exception(
+                f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {httpx.ReadTimeout}"
+            )
             return RepositoryClassResponse(
                 status=False,
                 status_code=status.HTTP_504_GATEWAY_TIMEOUT,

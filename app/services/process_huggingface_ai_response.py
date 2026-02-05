@@ -18,7 +18,9 @@ class ProcessPromptResponseService:
     def extract_content(hf_response: dict) -> ServiceClassResponse:
         info_logger.info(f"ProcessPromptResponseService.extract_content | Extract assistant message content from Hugging Face chat completion response.")
         try:
+            debug_logger.debug(f"ProcessPromptResponseService.extract_content | hf_response = {hf_response}")
             prompt_output = hf_response["choices"][0]["message"]["content"]
+
             debug_logger.debug(f"ProcessPromptResponseService.extract_content | prompt_output = {prompt_output}")
             return ServiceClassResponse(
                 status = True,
