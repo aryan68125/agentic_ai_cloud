@@ -18,6 +18,7 @@ from app.repositories.ai_agent_tool_repository import AIAgentToolsRepository
 
 # import models
 from app.models.class_return_model.services_class_response_models import (RepositoryClassResponse, ToolControlsignalResponse)
+from app.models.api_request_response_model.request_models import ToolRequest
 
 #import database transaction exception handler
 from app.database.db_transaction_exception_handler import TransactionAbort
@@ -33,6 +34,7 @@ from app.services.process_huggingface_ai_response import ProcessPromptResponseSe
 from app.utils.logger import LoggerFactory
 from app.utils.agent_contract import detect_agent_action
 from app.utils.agent_action_tags import AgentActionEnum
+from app.utils.back_end_owned_contracts import MainLLMBackEndOwnedContract
 
 # import other services on which this service depends on 
 from app.services.llm_context_builder import ContextBuilderService
@@ -117,7 +119,7 @@ class ProcessHuggingFaceAIPromptService:
 
                 await asyncio.sleep(delay)
 
-    async def process_user_prompt_llm(self,request) -> RepositoryClassResponse:
+    async def exploratory_llm_service(self,request) -> RepositoryClassResponse:
         try:                        
             # get system_prompt from the database using agen_id
             with self.db.begin():
@@ -176,34 +178,16 @@ class ProcessHuggingFaceAIPromptService:
 
             tool_prompt = self.tool_prompt_builder_service.build(tools_result.data.get("items"))
 
-            backend_control_contract = """
-            === PLATFORM CONTROL CONTRACT VERSION 1 (IMMUTABLE) [STARTS] ===
+            # 3. Inject non negotiable sys prompt from the back-end
+            backend_control_contract = MainLLMBackEndOwnedContract.BACK_END_NON_NEGOTIABLE_SYS_PROMPT.value
 
-            You operate in exactly ONE mode.
-
-            MODE A — RESEARCH REQUEST MODE (INTERNAL ONLY)
-            - Use when verified or external information is required
-            - Emit EXACTLY the following token on its own line and nothing else:
-
-            <<REQUEST_RESEARCH>>
-
-            MODE B — VERIFIED ANSWER MODE (USER-FACING)
-            - You will receive verified data from the platform like this : 
-            <<VERIFIED_PERPLEXITY_RESPONSE>>
-            - Summarize only the provided data
-            - Do not introduce new facts
-
-            These rules override all other instructions.
-
-            === PLATFORM CONTROL CONTRACT VERSION 1 (IMMUTABLE) [ENDS] ===
-            """
             final_system_prompt = (
                 backend_control_contract
                 + system_prompt_get_result.data["llm_system_prompt"]
                 + tool_prompt
             )
 
-            # 3. Build context window
+            # 4. Build context window
             messages = ContextBuilderService.build(
                 model_name=system_prompt_get_result.data["ai_model"],
                 system_prompt=final_system_prompt,
@@ -214,7 +198,7 @@ class ProcessHuggingFaceAIPromptService:
                 reserved_for_response=800
             )
                 
-            # 4. Create the new body for HF LLM api
+            # 5. Create the new body for HF LLM api
             body = {
                 "model": system_prompt_get_result.data["ai_model"],
                 "messages": messages
@@ -243,54 +227,31 @@ class ProcessHuggingFaceAIPromptService:
             if agent_action:
                 debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | agent_action['intent'] = {agent_action['intent']}")
                 if agent_action["intent"] == AgentActionEnum.RESEARCH_TAG.value:
-                    if not capabilities.allows_research():
+                    # tool orchestration decision making logic
+                    if capabilities.allows_research():
+                         # BACKEND-OWNED TOOL REQUEST
+                        debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | capabilities.allows_research() = {capabilities.allows_research()}")
+                        tool_request = ToolRequest(
+                            agent_id = request.agent_id,
+                            query = request.user_prompt,
+                            confidence = "high",
+                            source_policy = "authoritative_only"
+                        )
+
+                        return ToolControlsignalResponse(
+                            status=True,
+                            status_code=status.HTTP_202_ACCEPTED,
+                            message="Research request accepted",
+                            data=tool_request,
+                            response_type="CONTROL"
+                        )
+                    else:
                         error_logger.error(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | capabilities.allows_research() = {capabilities.allows_research()}")
                         return RepositoryClassResponse(
                             status=False,
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            message=AIAgentToolApiErrorMessage.NO_TOOLS_ATTACHED_TO_THE_AGENT.value
+                            message=AIAgentToolApiErrorMessage.RESEARCH_TOOL_IS_NOT_ATTACHED.value
                         )
-
-                    # BACKEND-OWNED TOOL REQUEST
-                    debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | capabilities.allows_research() = {capabilities.allows_research()}")
-                    research_request = {
-                        "agent_id": request.agent_id,
-                        "query": request.user_prompt,
-                        "confidence": "high",
-                        "source_policy": "authoritative_only"
-                    }
-                    
-                    # [TEMPORARY]
-                    """
-                    Instead of returning a response orchestrate the tool
-                    """
-                    return ToolControlsignalResponse(
-                        status=True,
-                        status_code=status.HTTP_202_ACCEPTED,
-                        message="Research request accepted",
-                        data=research_request,
-                        response_type="CONTROL"
-                    )
-                
-                # debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | Carry out tool orchestration based on the llm model's request")
-                # print(f"carry out tool orchestration based on the llm model's request")
-                # if not capabilities.allows_research():
-                #     error_logger.error(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | Research tool not attached to this agent")
-                #     print(f"Research tool not attached to this agent")
-                #     return RepositoryClassResponse(
-                #         status=False,
-                #         status_code=400,
-                #         message="Research tool not attached to this agent"
-                #     )
-                # return RepositoryClassResponse(
-                #     status=True,
-                #     status_code=status.HTTP_202_ACCEPTED,
-                #     message="Agent control signal detected",
-                #     data={
-                #         "action": agent_action
-                #     },
-                #     response_type="CONTROL"
-                # )
             
             if not isinstance(content, str) or not content.strip():
                 return RepositoryClassResponse(

@@ -47,3 +47,6 @@ class AIAgentToolApiSuccessMessage(Enum):
 
     TOOL_DETACHED_FROM_THE_AGENT_SUCCESS = "Tool detached from the agent successfully!"
     TOOLS_ATTCHED_TO_AGENT_LIST_FETCH = "Tools attached to the agent is fetched successfully!"
+
+class ResearchToolSuccessMessages(Enum):
+    MAIN_LLM_QUERY_PROCESSED = "Query of the main llm is processed successfully!"

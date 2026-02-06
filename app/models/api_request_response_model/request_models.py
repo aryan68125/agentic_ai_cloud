@@ -113,3 +113,10 @@ class SetAgentToolToAnAgentRequest(BaseModel):
 class DetachAgentToolFromAgentRequest(BaseModel):
     agent_tool_attachment_id : Optional[int] = Field(default=None, description = SetAgentToolToAnAgentRequestFieldDescription.AGENT_TOOL_ATTACHMENT_ID.value)
     agent_id : Optional[str] = Field(default=None, description = AgentRequestFieldDescription.AI_AGENT_ID.value)
+
+# internal request models
+class ToolRequest(BaseModel):
+    agent_id : str 
+    query : str 
+    confidence : str = Field(default="high")
+    source_policy : str = Field(default="authoritative_only")

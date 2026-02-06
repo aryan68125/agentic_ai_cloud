@@ -13,7 +13,10 @@ from app.utils.hugging_face_ai_model_enum import HuggingFaceModelList
 from app.utils.logger import LoggerFactory
 
 # import services
-from app.services.process_hugging_face_ai_prompt import ProcessHuggingFaceAIPromptService
+# from app.services.process_hugging_face_ai_prompt import ProcessHuggingFaceAIPromptService
+
+# import orchestrators
+from app.orchestrator.agent_orchestrator import AgentOrchestrator
 
 # load project configurations
 from app.configs.config import ProjectConfigurations
@@ -30,7 +33,8 @@ class HuggingFaceAIModelController:
 
     def __init__(self, db: Session):
         self.db = db
-        self.process_prompt_service_obj = ProcessHuggingFaceAIPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value, db=db)
+        # self.process_prompt_service_obj = ProcessHuggingFaceAIPromptService(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value, db=db)
+        self.orchestrator = AgentOrchestrator(hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,HF_API_URL = ProjectConfigurations.HF_API_URL.value, db=db)
 
     def get_models(self) -> APIResponse:
         try:
@@ -55,7 +59,8 @@ class HuggingFaceAIModelController:
     async def process_hugging_face_prompt_request(self, request) -> APIResponse:
         try:
             info_logger.info(f"HuggingFaceAIModelController.process_hugging_face_prompt_request | Started to process user prompt | user_prompt = {request.user_prompt}")
-            result = await self.process_prompt_service_obj.process_user_prompt_llm(request=request) 
+            # result = await self.process_prompt_service_obj.exploratory_llm_service(request=request) 
+            result = await self.orchestrator.handle_user_prompt(request)
             if not result.status:
                 return APIResponse(
                     status=result.status_code,

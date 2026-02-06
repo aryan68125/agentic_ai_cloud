@@ -61,4 +61,9 @@ class AIAgentToolApiErrorMessage(Enum):
     AGENT_TOOL_ATTACHMENT_ID = "Agent tool attachment id must not be empty!"
     AGENT_TOOL_IS_NOT_ATTACHED_ERR = "The tool you are trying to detach is not attached in the first place!"
     NO_TOOLS_ATTACHED_TO_THE_AGENT = "No tool is attached to the agent!"
+
+    RESEARCH_TOOL_IS_NOT_ATTACHED = "Research tool is not attached to the user"
+
+class ResearchToolErrorMessages(Enum):
+    LLM_MODEL_API_TIMEOUT = "Research tool perplexity LLM response timed out. Model is slow or overloaded."
     

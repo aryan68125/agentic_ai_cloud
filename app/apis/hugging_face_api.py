@@ -55,3 +55,28 @@ def reset_ai_agent_context(
     BASE_URL_FAST_API_SERVER = FastApiServer.get_base_url(request=http_request)
     info_logger.info(f"process_user_prompt_hugging_face | url = {BASE_URL_FAST_API_SERVER}{HuggingFaceAPIUrls.HUGGINGFACE_AI_MODEL_RESET_CONTEXT.value} | {LoggerInfoMessages.API_HIT_SUCCESS.value}")
     return controller.reset_huggingface_model_context(request)
+
+from app.tools.research_tool.services.process_qwen_llm import ProcessPerplexityAIPromptService
+from app.configs.config import ProjectConfigurations
+from pydantic import BaseModel
+class ResearchToolTestRequest(BaseModel):
+    main_llm_request_query: str
+
+@router.post("/hugging_face/research_tool_llm_test_api")
+async def test_perplexity_research_tool_llm(payload: ResearchToolTestRequest):
+    if not payload.main_llm_request_query.strip():
+        return {
+            "status": 400,
+            "error": "query cannot be empty"
+        }
+
+    service = ProcessPerplexityAIPromptService(
+        hugging_face_auth_token=ProjectConfigurations.HUGGING_FACE_AUTH_TOKEN.value,
+        HF_API_URL=ProjectConfigurations.HF_API_URL.value
+    )
+
+    result = await service.process_main_LLM_research_query(
+        request=payload
+    )
+
+    return result
