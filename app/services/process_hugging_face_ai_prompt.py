@@ -15,6 +15,7 @@ from app.repositories.user_prompt_repository import UserPromptRepository
 from app.repositories.system_prompt_repository import SystemPromptRepository
 from app.repositories.llm_prompt_response_repository import LLmPromptResponseRepository
 from app.repositories.ai_agent_tool_repository import AIAgentToolsRepository
+from app.repositories.verified_payload_repository import VerifiedPayloadRepository
 
 # import models
 from app.models.class_return_model.services_class_response_models import (RepositoryClassResponse, ToolControlsignalResponse)
@@ -56,6 +57,7 @@ class ProcessHuggingFaceAIPromptService:
         self.system_prompt_repo = SystemPromptRepository(db=db)
         self.llm_response_repo = LLmPromptResponseRepository(db=db)
         self.tools_repository = AIAgentToolsRepository(db=db)
+        self.verified_payload_repo = VerifiedPayloadRepository(db=db)
         self.process_response_service = ProcessPromptResponseService()
         self.tool_prompt_builder_service = ToolPromptBuilder()
 
@@ -329,10 +331,13 @@ class ProcessHuggingFaceAIPromptService:
             with self.db.begin():
                 delete_all_user_prompt_result = self.user_prompt_repo.delete_all(request.agent_id)
                 delete_all_llm_response_result = self.llm_response_repo.delete_all(request.agent_id)
+                delete_all_verified_payload_result = self.verified_payload_repo.delete_all(request.agent_id)
             if not delete_all_user_prompt_result.status:
                 raise TransactionAbort(delete_all_user_prompt_result)
             if not delete_all_llm_response_result.status:
                 raise TransactionAbort(delete_all_llm_response_result)
+            if not delete_all_verified_payload_result.status:
+                raise TransactionAbort(delete_all_verified_payload_result)
             
             return RepositoryClassResponse(
                     status = True,

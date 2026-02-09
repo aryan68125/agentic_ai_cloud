@@ -50,3 +50,8 @@ class AIAgentToolApiSuccessMessage(Enum):
 
 class ResearchToolSuccessMessages(Enum):
     MAIN_LLM_QUERY_PROCESSED = "Query of the main llm is processed successfully!"
+    
+    # db operation messages
+    VERIFIED_PAYLOAD_SAVED = "Verified payload saved successfully!"
+    VERIFIED_PAYLOAD_DELETED = "Verified payload deleted successfully!"
+    

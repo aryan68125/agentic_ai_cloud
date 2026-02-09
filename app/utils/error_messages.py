@@ -66,4 +66,7 @@ class AIAgentToolApiErrorMessage(Enum):
 
 class ResearchToolErrorMessages(Enum):
     LLM_MODEL_API_TIMEOUT = "Research tool perplexity LLM response timed out. Model is slow or overloaded."
-    
+    VERIFIED_PAYLOAD_EMPTY = "Verified payload is empty!"
+
+    # db operation messages
+    VERIFIED_PAYLOAD_NOT_FOUND = "Verified payload is not found in the database."
