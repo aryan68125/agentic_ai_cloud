@@ -43,16 +43,17 @@ class AgentOrchestrator:
             # [CONVERSATION MODE]
             debug_logger.debug(f"AgentOrchestrator.handle_user_prompt | await self._handle_research_flow(result.data, request) = {result}")
             return result
-        if isinstance(result, ToolControlsignalResponse):
-            # [RESEARCH MODE]
-            _handle_research_flow_result =  await self._handle_research_flow(result.data, request)
-            if not _handle_research_flow_result.status and _handle_research_flow_result:
-                error_logger.error(f"AgentOrchestrator.handle_user_prompt | await self._handle_research_flow(result.data, request) = {_handle_research_flow_result}")
-                return RepositoryClassResponse(
-                    status=_handle_research_flow_result.status,
-                    status_code=_handle_research_flow_result.status_code,
-                    message=_handle_research_flow_result.message
-                )
+        
+        # [RESEARCH MODE]
+        _handle_research_flow_result =  await self._handle_research_flow(result.data, request)
+        if not _handle_research_flow_result.status and _handle_research_flow_result:
+            error_logger.error(f"AgentOrchestrator.handle_user_prompt | await self._handle_research_flow(result.data, request) = {_handle_research_flow_result}")
+            return RepositoryClassResponse(
+                status=_handle_research_flow_result.status,
+                status_code=_handle_research_flow_result.status_code,
+                message=_handle_research_flow_result.message
+            )
+        return _handle_research_flow_result
 
     async def _handle_research_flow(self, tool_request, request) -> RepositoryClassResponse:
         try:

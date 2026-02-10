@@ -11,6 +11,13 @@ class MainLLMBackEndOwnedContract(Enum):
 
         <<REQUEST_RESEARCH>>
 
+        - If research is NOT required:
+        Return EXACTLY:
+
+        <<NO_RESEARCH>>
+        
+        and nothing else. No conversation and no thinking out loud nothing just the tag
+
         MODE B — VERIFIED ANSWER MODE (USER-FACING)
         - You will receive verified data from the platform like this : 
         <<VERIFIED_PERPLEXITY_RESPONSE>>

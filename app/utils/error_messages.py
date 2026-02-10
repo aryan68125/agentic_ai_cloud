@@ -56,6 +56,7 @@ class HuggingFaceAIModelAPIErrorMessage(Enum):
 
     # decision related errors
     MODEL_DECISION_FAILED = "MODE A decision failed"
+    MODE_A_LEAKED = "Internal contract violation: MODE A leaked into persistence"
 
 class AIAgentToolApiErrorMessage(Enum):
     AGENT_TOOL_NAME_EMPTY = "Agent tool name cannot be empty!"

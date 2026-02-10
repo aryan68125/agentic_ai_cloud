@@ -300,6 +300,18 @@ class ProcessHuggingFaceAIPromptService:
                         message=HuggingFaceAIModelAPIErrorMessage.LLM_PROMPT_HUGGING_FACE_ERROR.value
                     )
                 
+                if AgentActionEnum.RESEARCH_TAG.value in content:
+                    error_logger.critical(
+                        f"ProcessHuggingFaceAIPromptService.exploratory_llm_service |"
+                        f"MODE A CONTRACT VIOLATION | "
+                        f"{AgentActionEnum.RESEARCH_TAG.value} reached persistence layer"
+                    )
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        message=HuggingFaceAIModelAPIErrorMessage.MODE_A_LEAKED.value
+                    )
+                
                 user_prompt_insert_result = self.user_prompt_repo.insert(
                     agent_id=request.agent_id,
                     user_prompt=request.user_prompt
