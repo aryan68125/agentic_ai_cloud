@@ -128,7 +128,11 @@ class ProcessPerplexityAIPromptService:
                 await asyncio.sleep(delay)
 
     async def process_main_LLM_research_query(self,tool_request) -> RepositoryClassResponse:
-        try:                                            
+        try:
+            MAX_RETRIES = 3
+            parsed_items = None
+            raw_text = None
+
             info_logger.info(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | This class hit was a success! ")
             debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
             
@@ -160,33 +164,48 @@ class ProcessPerplexityAIPromptService:
 
             debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | make request to hugging face | HEADERS = {headers} , BODY = {body}")
 
-            # making hugging face api call 
-            raw_data = await self._call_huggingface_with_retry(body, headers)
-            debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | Research llm resposne raw_data | raw_data = {raw_data}")
+            for attempt in range(1, MAX_RETRIES + 1):
+                # making hugging face api call 
+                raw_data = await self._call_huggingface_with_retry(body, headers)
+                debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | Research llm resposne raw_data | raw_data = {raw_data}")
 
-            # process response from hugging face ai_model
-            extracted_data_obj = self.process_response_service.extract_content(raw_data)
-            
-            if not extracted_data_obj:
-                return RepositoryClassResponse(
-                    status=False,
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    message=extracted_data_obj.message
-                )
-            
-            # 1. Extract raw LLM text
-            data = extracted_data_obj.data.get("content")
-            if not isinstance(data, str) or not data.strip():
-                error_logger.error(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | Invalid research LLM response: content missing or not a string")
-                return RepositoryClassResponse(
-                    status=False,
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    message="Invalid research LLM response: content missing or not a string"
-                )
-            debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | perplexity llm response data  = {data}")
+                # process response from hugging face ai_model
+                extracted_data_obj = self.process_response_service.extract_content(raw_data)
+                
+                if not extracted_data_obj:
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        message=extracted_data_obj.message
+                    )
+                
+                # 1. Extract raw LLM text
+                data = extracted_data_obj.data.get("content")
+                if not isinstance(data, str) or not data.strip():
+                    error_logger.error(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | Invalid research LLM response: content missing or not a string")
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        message="Invalid research LLM response: content missing or not a string"
+                    )
+                debug_logger.debug(f"ProcessPerplexityAIPromptService.process_main_LLM_research_query | perplexity llm response data  = {data}")
 
-            # 2. Parse TAG PROTOCOL
-            parsed_items = self.process_research_response_service.parse(text=data)
+                # 2. Parse TAG PROTOCOL
+                parsed_items = self.process_research_response_service.parse(text=data)
+                if parsed_items:
+                    debug_logger.debug(
+                        f"Research tag protocol satisfied on attempt {attempt}"
+                    )
+                    break
+
+                # HARDEN PROMPT ON RETRY
+                body["messages"][0]["content"] += (
+                    "\n\nSTRICT REMINDER:\n"
+                    "- DO NOT output <think> or reasoning\n"
+                    "- DO NOT output malformed tags\n"
+                    "- OUTPUT ONLY the TAG PROTOCOL\n"
+                )
+
             if not parsed_items:
                 """
                 I want to implement retry strategy here if the parsed_item is invalid 
