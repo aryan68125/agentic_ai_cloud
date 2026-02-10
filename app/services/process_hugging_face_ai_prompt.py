@@ -124,15 +124,15 @@ class ProcessHuggingFaceAIPromptService:
     async def exploratory_llm_service(self,request) -> RepositoryClassResponse:
         try:                        
             # get system_prompt from the database using agen_id
-            with self.db.begin():
-                system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
-                if not system_prompt_get_result.status:
-                    raise TransactionAbort(system_prompt_get_result)
+            
+            system_prompt_get_result = self.system_prompt_repo.get_one(agent_id = request.agent_id)
                     
-            info_logger.info(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | This class hit was a success! ")
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
+            info_logger.info(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | This class hit was a success! ")
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | get auth token from the env file | HUGGING_FACE_AUTH_TOKEN = {self.hugging_face_auth_token}")
             
             headers = {"Authorization": f"Bearer {self.hugging_face_auth_token}"}
+
+            backend_control_contract = MainLLMBackEndOwnedContract.BACK_END_NON_NEGOTIABLE_SYS_PROMPT.value
             
             # Below is the explaination on how the body should be constructed before sending it to the hugging face LLM
             # body = {
@@ -160,19 +160,49 @@ class ProcessHuggingFaceAIPromptService:
 
             # [NEW WAY OF SENDING BODY TO HF LLM MAINTAINING LLM CONTEXT]
             # BUILD LLM CONTEXT HERE
-            # 1. Fetch conversation history
-            with self.db.begin():
-                conversation_result = self.llm_response_repo.get_conversation_turns(
-                    agent_id=request.agent_id
+            # ---- MODE A ----
+            # 1. Call LLM : Decide if the research is needed or not
+            """
+            MODE A or Normal conversation decision logic
+            - MODE A : Don't Build , store or send context to LLM
+            - NORMAL CONVERSATION : Build, Store and send context to LLM
+            """
+            decision_messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        backend_control_contract
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": request.user_prompt
+                }
+            ]
+            decision_body = {
+                "model": system_prompt_get_result.data["ai_model"],
+                "messages": decision_messages
+            }
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | decision_body = {decision_body}")
+            decision_raw = await self._call_huggingface_with_retry(
+                decision_body,
+                headers
+            )
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | Main LLM decision | decision_raw = {decision_raw}")
+            decision_extract = self.process_response_service.extract_content(decision_raw)
+            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | Main LLM decision | decision_extract = {decision_extract}")
+            if not decision_extract or not decision_extract.data.get("content"):
+                error_logger.error(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | {HuggingFaceAIModelAPIErrorMessage.MODEL_DECISION_FAILED.value}")
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    message=HuggingFaceAIModelAPIErrorMessage.MODEL_DECISION_FAILED.value
                 )
-                if not conversation_result.status:
-                    raise TransactionAbort(conversation_result)
-                
-            # 2. attach the tool prompt after the system prompt
-            with self.db.begin():
-                tools_result = self.tools_repository.get_all_attached_tools(agent_id=request.agent_id)
-                if not tools_result.status:
-                    raise TransactionAbort(tools_result)
+            
+            decision_content = decision_extract.data["content"]
+
+            #2. build tool prompt for it to be used later 
+            tools_result = self.tools_repository.get_all_attached_tools(agent_id=request.agent_id)
                 
             capabilities = AgentCapabilityService(
                 tools_result.data.get("items", [])
@@ -180,59 +210,19 @@ class ProcessHuggingFaceAIPromptService:
 
             tool_prompt = self.tool_prompt_builder_service.build(tools_result.data.get("items"))
 
-            # 3. Inject non negotiable sys prompt from the back-end
-            backend_control_contract = MainLLMBackEndOwnedContract.BACK_END_NON_NEGOTIABLE_SYS_PROMPT.value
-
-            final_system_prompt = (
-                backend_control_contract
-                + system_prompt_get_result.data["llm_system_prompt"]
-                + tool_prompt
-            )
-
-            # 4. Build context window
-            messages = ContextBuilderService.build(
-                model_name=system_prompt_get_result.data["ai_model"],
-                system_prompt=final_system_prompt,
-                conversation_turns=conversation_result.data,
-                new_user_prompt=request.user_prompt,
-                token_counter=TokenCounter.count, 
-                max_tokens=3000,
-                reserved_for_response=800
-            )
-                
-            # 5. Create the new body for HF LLM api
-            body = {
-                "model": system_prompt_get_result.data["ai_model"],
-                "messages": messages
-            }
-
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | make request to hugging face | HEADERS = {headers} , BODY = {body}")
-
-            # making hugging face api call 
-            data = await self._call_huggingface_with_retry(body, headers)
-
-            # process response from hugging face ai_model
-            result_process_response_service = self.process_response_service.extract_content(data)
-            if not result_process_response_service:
-                return RepositoryClassResponse(
-                    status=False,
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    message=result_process_response_service.message
-                )
-            
-            content = result_process_response_service.data.get("content")
-
-            # detecting agent action here 
-            agent_action = detect_agent_action(content)
+            #3. detecting agent's decision and perform action accordingly 
+            agent_action = detect_agent_action(decision_content)
             # PLATFORM CONTRACT — INTERNAL SIGNAL
-            debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | agent_action = {agent_action}")
+            debug_logger.debug(
+                f"MODE A DECISION | content={decision_content} | action={agent_action}"
+            )
             if agent_action:
-                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | agent_action['intent'] = {agent_action['intent']}")
+                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | agent_action['intent'] = {agent_action['intent']}")
                 if agent_action["intent"] == AgentActionEnum.RESEARCH_TAG.value:
                     # tool orchestration decision making logic
                     if capabilities.allows_research():
-                         # BACKEND-OWNED TOOL REQUEST
-                        debug_logger.debug(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | capabilities.allows_research() = {capabilities.allows_research()}")
+                        # BACKEND-OWNED TOOL REQUEST : If a research tool is attached
+                        debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | capabilities.allows_research() = {capabilities.allows_research()}")
                         tool_request = ToolRequest(
                             agent_id = request.agent_id,
                             query = request.user_prompt,
@@ -248,47 +238,94 @@ class ProcessHuggingFaceAIPromptService:
                             response_type="CONTROL"
                         )
                     else:
-                        error_logger.error(f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | capabilities.allows_research() = {capabilities.allows_research()}")
+                        # BACKEND-OWNED TOOL REQUEST : If a research tool is not attached
+                        error_logger.error(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | capabilities.allows_research() = {capabilities.allows_research()}")
                         return RepositoryClassResponse(
                             status=False,
                             status_code=status.HTTP_400_BAD_REQUEST,
                             message=AIAgentToolApiErrorMessage.RESEARCH_TOOL_IS_NOT_ATTACHED.value
                         )
-            
-            if not isinstance(content, str) or not content.strip():
-                return RepositoryClassResponse(
-                    status=False,
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    message=HuggingFaceAIModelAPIErrorMessage.LLM_PROMPT_HUGGING_FACE_ERROR.value
+            else:
+                # ---- NORMAL CONVERSATION ----
+                # 3. Fetch conversation history
+                conversation_result = self.llm_response_repo.get_conversation_turns(
+                    agent_id=request.agent_id
+                )      
+
+                # 5. Inject non negotiable sys prompt and tool_prompt here from the back-end
+                final_system_prompt = (
+                    backend_control_contract
+                    + system_prompt_get_result.data["llm_system_prompt"]
+                    + tool_prompt
                 )
-            
-            with self.db.begin():
+
+                # 6. Build context window
+                messages = ContextBuilderService.build(
+                    model_name=system_prompt_get_result.data["ai_model"],
+                    system_prompt=final_system_prompt,
+                    conversation_turns=conversation_result.data,
+                    new_user_prompt=request.user_prompt,
+                    token_counter=TokenCounter.count, 
+                    max_tokens=3000,
+                    reserved_for_response=800
+                )
+                    
+                # 7. Create the new body for HF LLM api
+                body = {
+                    "model": system_prompt_get_result.data["ai_model"],
+                    "messages": messages
+                }
+
+                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | NORMAL CONVERSATION | HEADERS = {headers} , BODY = {body}")
+
+                # making hugging face api call 
+                data = await self._call_huggingface_with_retry(body, headers)
+
+                # process response from hugging face ai_model
+                result_process_response_service = self.process_response_service.extract_content(data)
+                debug_logger.debug(f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | result_process_response_service = {result_process_response_service}")
+                if not result_process_response_service:
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        message=result_process_response_service.message
+                    )
+                
+                content = result_process_response_service.data.get("content")
+                
+                if not isinstance(content, str) or not content.strip():
+                    return RepositoryClassResponse(
+                        status=False,
+                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                        message=HuggingFaceAIModelAPIErrorMessage.LLM_PROMPT_HUGGING_FACE_ERROR.value
+                    )
+                
                 user_prompt_insert_result = self.user_prompt_repo.insert(
                     agent_id=request.agent_id,
                     user_prompt=request.user_prompt
                 )
-                if not user_prompt_insert_result.status:
-                    raise TransactionAbort(user_prompt_insert_result)
 
                 llm_response_repo = self.llm_response_repo.insert(
                     agent_id=request.agent_id,
                     llm_user_prompt_id=user_prompt_insert_result.data["id"],
                     llm_prompt_response=content
                 )
-                if not llm_response_repo.status:
-                    raise TransactionAbort(llm_response_repo)
-            
-            return RepositoryClassResponse(
-                    status = True,
-                    status_code = status.HTTP_200_OK,
-                    message = HuggingFaceAIModelAPISuccessMessage.LLM_USER_PROMPT_SUCCESS.value,
-                    data = {
-                        "content":content
-                    }
-                )
+                
+                return RepositoryClassResponse(
+                        status = True,
+                        status_code = status.HTTP_200_OK,
+                        message = HuggingFaceAIModelAPISuccessMessage.LLM_USER_PROMPT_SUCCESS.value,
+                        data = {
+                            "content":content,
+                            "inserted" : {
+                                "user_prompt" : user_prompt_insert_result,
+                                'llm_response' : llm_response_repo
+                            }
+                        }
+                    )
         except TransactionAbort as e:
             error_logger.exception(
-                f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {e.response.message}"
+                f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | {e.response.message}"
             )
             return RepositoryClassResponse(
                 status=False,
@@ -297,7 +334,7 @@ class ProcessHuggingFaceAIPromptService:
             )
         except httpx.ReadTimeout:
             error_logger.exception(
-                f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {httpx.ReadTimeout}"
+                f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | {httpx.ReadTimeout}"
             )
             return RepositoryClassResponse(
                 status=False,
@@ -306,7 +343,7 @@ class ProcessHuggingFaceAIPromptService:
             )
         except Exception as e:
             error_logger.exception(
-                f"ProcessHuggingFaceAIPromptService.process_user_prompt_llm | {e}"
+                f"ProcessHuggingFaceAIPromptService.exploratory_llm_service | {e}"
             )
             return RepositoryClassResponse(
                 status=False,

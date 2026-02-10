@@ -76,10 +76,13 @@ class VerifiedAnswerLLMService:
 
     async def generate(self, agent_id, verified_payload) -> RepositoryClassResponse:
         try:
-            with self.db.begin():
-                system_prompt_repo_result = self.system_prompt_repo.get_one(agent_id)
-                if not system_prompt_repo_result.status:
-                    raise TransactionAbort(system_prompt_repo_result)
+            system_prompt_repo_result = self.system_prompt_repo.get_one(agent_id)
+            if not system_prompt_repo_result.status:
+                return RepositoryClassResponse(
+                    status=False,
+                    status_code=system_prompt_repo_result.status_code,
+                    message=system_prompt_repo_result.message
+                )
 
             headers = {"Authorization": f"Bearer {self.hugging_face_auth_token}"}
 
@@ -107,16 +110,10 @@ class VerifiedAnswerLLMService:
             return RepositoryClassResponse(
                 status=True,
                 status_code=status.HTTP_200_OK,
-                message=e.response.message,
+                message=response.message,
                 data={
                     "content":content
                 }
-            )
-        except TransactionAbort as e:
-            return RepositoryClassResponse(
-                status=False,
-                status_code=e.response.status_code,
-                message=e.response.message
             )
         except Exception as e:
             return RepositoryClassResponse(

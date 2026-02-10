@@ -71,11 +71,6 @@ class AgentOrchestrator:
             debug_logger.debug(f"AgentOrchestrator._handle_research_flow | verified_payload = {verified_payload}")
 
             # Store verified payload
-            # [OLD CODE REMOVE LATER]
-            # self.verified_repo.insert(
-            #     agent_id=request.agent_id,
-            #     payload=verified_payload
-            # )
             with self.db.begin():   # ← ORCHESTRATOR owns transaction
                 insert_result = self.verified_repo.insert(
                     agent_id=request.agent_id,

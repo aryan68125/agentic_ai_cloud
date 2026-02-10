@@ -54,6 +54,9 @@ class HuggingFaceAIModelAPIErrorMessage(Enum):
     HUGGING_FACE_LLM_API_TIMEOUT = "LLM response timed out. Model is slow or overloaded."
     LLM_CONTEXT_LIMIT_EMPTY = "Limit for the llm context cannot be less than or equal to zero or None"
 
+    # decision related errors
+    MODEL_DECISION_FAILED = "MODE A decision failed"
+
 class AIAgentToolApiErrorMessage(Enum):
     AGENT_TOOL_NAME_EMPTY = "Agent tool name cannot be empty!"
     AGENT_TOOL_NAME_INVALID = "Agent tool name entered is invalid!"
